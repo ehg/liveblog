@@ -100,26 +100,24 @@
 		},
 		crud: function(action) {
 			var new_entry_content = this.$textarea.val(),
-				data = {
-					crud_action: action,
+				entry = new liveblog.Entry({
 					post_id: liveblog_settings.post_id,
-					entry_id: this.get_id_for_ajax_request(),
 					content: new_entry_content
-				};
+				});
+
 			if ( ! new_entry_content ) {
 				return;
 			}
-			data[liveblog_settings.nonce_key] = liveblog.publisher.nonce;
-			this.disable();
-			this.show_spinner();
-			liveblog.ajax_request( liveblog_settings.endpoint_url + 'crud', data, _.bind(this.success, this), _.bind(this.error, this), 'POST' );
+			//this.disable();
+			//this.show_spinner();
+			entry.save();
 		},
 		success: function(response, status, xhr) {
 			this.enable();
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.reset_timer();
-			liveblog.get_recent_entries_success(response, status, xhr);
+			//liveblog.get_recent_entries_success(response, status, xhr);
 		},
 		error: function(response, status) {
 			liveblog.add_error(response, status);

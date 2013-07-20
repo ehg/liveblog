@@ -5,9 +5,25 @@ window.liveblog = window.liveblog || {};
 	liveblog.EntriesView = Backbone.View.extend({
 		el: '#liveblog-container',
 		initialize: function() {
-			liveblog.queue.on('reset', this.scrollToTop, this);
-			$(window).scroll($.throttle(250, this.flushQueueWhenOnTop));
+			// This results in a delay for comments you've just created showing up
+			liveblog.queue.on('reset', this.addEntries, this);
+			//$(window).scroll($.throttle(250, this.flushQueueWhenOnTop));
 		},
+
+		addEntries: function() {
+			liveblog.queue.each(this.addEntry, this);
+			liveblog.reset_timer();
+			liveblog.undelay_timer();
+		},
+
+		addEntry: function( new_entry ) {
+			console.log('add entry', new_entry);
+			var $new_entry = $( new_entry.get('html') );
+			// TODO: animate
+			$new_entry.addClass('highlight').prependTo( liveblog.$entry_container );
+			this.updateTimes();
+		},
+
 		scrollToTop: function() {
 			$(window).scrollTop(this.$el.offset().top);
 		},
@@ -30,20 +46,68 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
-	liveblog.Entry = Backbone.Model.extend({});
+	liveblog.Entry = Backbone.Model.extend({
+		initialize: function() {
+			this.on('sync', function(){ liveblog.queue.fetch() });
+		},
+		sync: function(method, model, options) {
+			if (method === "update" || method === "create") {
+				model.set(liveblog_settings.nonce_key, liveblog.publisher.nonce);
+				model.set('crud_action', 'insert');
+				options = options ? _.clone(options) : {};
+				options.url = liveblog_settings.endpoint_url + 'crud';
+				options.data = $.param(model.attributes);
+			}
+			var args = [method, model, options];
+			return Backbone.sync.apply(this, args);
+		}
+	});
 
 	liveblog.EntriesQueue = Backbone.Collection.extend({
 		model: liveblog.Entry,
+
+		url: function() {
+			var url = liveblog_settings.endpoint_url,
+				from = liveblog.latest_entry_timestamp + 1,
+				local_diff = liveblog.current_timestamp() - liveblog.latest_response_local_timestamp,
+				to				 = liveblog.latest_response_server_timestamp + local_diff;
+
+			url += from + '/' + to + '/';
+			return url;
+		},
+
+		parse: function(response, options) {
+			var timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
+
+			liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
+			liveblog.latest_response_local_timestamp	= liveblog.current_timestamp();
+			console.log(timestamp_milliseconds);
+
+			if ( response && response.latest_timestamp ) {
+				liveblog.latest_entry_timestamp = response.latest_timestamp;
+			}
+
+			// If modifying or deleting, do something like delete from the collection
+			return response.entries;
+		},
+
+		added: function() {
+			this.filter(function(entry) { return 'new' === entry.type; } );
+		},
+
+		modified: function() {
+			this.filter(function(entry) { return 'update' === entry.type || 'delete' === entry.type; } );
+		},
+
 		flush: function() {
 			if (this.isEmpty()) {
 				return;
 			}
-			liveblog.display_entries(this.models);
 			this.reset([]);
 		},
 		applyModifyingEntries: function(entries) {
 			var collection = this;
-			_.each(entries, function(entry) {
+			this.each(entries, function(entry) {
 				collection.applyModifyingEntry(entry);
 			});
 		},
@@ -61,6 +125,7 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
+	// This is the title bar that informs users of new comments
 	liveblog.FixedNagView = Backbone.View.extend({
 		el: '#liveblog-fixed-nag',
 		events: {
@@ -119,8 +184,8 @@ window.liveblog = window.liveblog || {};
 	liveblog.$events = $( '<span />' );
 
 	liveblog.init = function() {
-		liveblog.$entry_container = $( '#liveblog-entries'        );
-		liveblog.$spinner         = $( '#liveblog-update-spinner' );
+		liveblog.$entry_container = $( '#liveblog-entries'				);
+		liveblog.$spinner				= $( '#liveblog-update-spinner' );
 
 		liveblog.queue = new liveblog.EntriesQueue();
 		liveblog.fixedNag = new liveblog.FixedNagView();
@@ -145,8 +210,8 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.set_initial_timestamps = function() {
 		var now = liveblog.current_timestamp();
-		liveblog.latest_entry_timestamp           = liveblog_settings.latest_entry_timestamp || 0;
-		liveblog.latest_response_local_timestamp  = now;
+		liveblog.latest_entry_timestamp					= liveblog_settings.latest_entry_timestamp || 0;
+		liveblog.latest_response_local_timestamp	= now;
 		liveblog.latest_response_server_timestamp = now;
 	};
 
@@ -154,12 +219,12 @@ window.liveblog = window.liveblog || {};
 	// we need them to be real integers, so that we can use them in
 	// arithmetic operations
 	liveblog.cast_settings_numbers = function() {
-		liveblog_settings.refresh_interval        = parseInt( liveblog_settings.refresh_interval, 10 );
+		liveblog_settings.refresh_interval				= parseInt( liveblog_settings.refresh_interval, 10 );
 		liveblog_settings.max_consecutive_retries = parseInt( liveblog_settings.max_consecutive_retries, 10 );
-		liveblog_settings.delay_threshold         = parseInt( liveblog_settings.delay_threshold, 10 );
-		liveblog_settings.delay_multiplier        = parseFloat( liveblog_settings.delay_multiplier, 10 );
-		liveblog_settings.latest_entry_timestamp  = parseInt( liveblog_settings.latest_entry_timestamp, 10 );
-		liveblog_settings.fade_out_duration       = parseInt( liveblog_settings.fade_out_duration, 10 );
+		liveblog_settings.delay_threshold				= parseInt( liveblog_settings.delay_threshold, 10 );
+		liveblog_settings.delay_multiplier				= parseFloat( liveblog_settings.delay_multiplier, 10 );
+		liveblog_settings.latest_entry_timestamp	= parseInt( liveblog_settings.latest_entry_timestamp, 10 );
+		liveblog_settings.fade_out_duration			= parseInt( liveblog_settings.fade_out_duration, 10 );
 	};
 
 	liveblog.kill_timer = function() {
@@ -167,8 +232,14 @@ window.liveblog = window.liveblog || {};
 	};
 
 	liveblog.reset_timer = function() {
+		console.log('RSET TIMER');
 		liveblog.kill_timer();
-		liveblog.refresh_timeout = setTimeout( liveblog.get_recent_entries, ( liveblog_settings.refresh_interval * 1000 ) );
+		var fetch = function() {
+			console.log('FETCHING');
+			liveblog.queue.fetch();
+		}
+
+		liveblog.refresh_timeout = setTimeout( fetch, ( liveblog_settings.refresh_interval * 1000 ) );
 	};
 
 	liveblog.undelay_timer = function() {
@@ -192,37 +263,12 @@ window.liveblog = window.liveblog || {};
 		setInterval(tick, 60 * 1000);
 	};
 
-	liveblog.get_recent_entries = function() {
-		var url  = liveblog_settings.endpoint_url,
-			from = liveblog.latest_entry_timestamp + 1,
-			local_diff = liveblog.current_timestamp() - liveblog.latest_response_local_timestamp,
-			to         = liveblog.latest_response_server_timestamp + local_diff;
-
-		url += from + '/' + to + '/';
-		liveblog.show_spinner();
-		liveblog.ajax_request( url, {}, liveblog.get_recent_entries_success, liveblog.get_recent_entries_error );
-	};
-
-	liveblog.get_recent_entries_success = function( response, status, xhr ) {
-		var added, modifying;
-
-		liveblog.consecutive_failures_count = 0;
-
-		liveblog.hide_spinner();
-
-		if ( response && response.latest_timestamp ) {
-			liveblog.latest_entry_timestamp = response.latest_timestamp;
-		}
-
-		liveblog.latest_response_server_timestamp = liveblog.server_timestamp_from_xhr( xhr );
-		liveblog.latest_response_local_timestamp  = liveblog.current_timestamp();
+	liveblog.fetched = function( model, resp, options ) {
 
 		if ( response.entries.length ) {
 			if ( liveblog.is_at_the_top() && liveblog.queue.isEmpty() ) {
 				liveblog.display_entries( response.entries );
 			} else {
-				added =  _.filter(response.entries, function(entry) { return 'new' === entry.type; } );
-				modifying =  _.filter(response.entries, function(entry) { return 'update' === entry.type || 'delete' === entry.type; } );
 				liveblog.queue.add(added);
 				liveblog.queue.applyModifyingEntries(modifying);
 				// updating and deleting entries is rare enough, so that we can screw the user's scroll and not queue those events
@@ -230,8 +276,6 @@ window.liveblog = window.liveblog || {};
 			}
 		}
 
-		liveblog.reset_timer();
-		liveblog.undelay_timer();
 	};
 
 	liveblog.get_recent_entries_error = function() {
@@ -257,50 +301,10 @@ window.liveblog = window.liveblog || {};
 		liveblog.reset_timer();
 	};
 
-	liveblog.display_entries = function( entries ) {
-
-		if ( !entries || ! entries.length ) {
-			return;
-		}
-
-		// if we insert a few entries at once we should give the user more time to
-		// seperate new from old ones
-		var duration = entries.length * 1000 * liveblog_settings.fade_out_duration,
-			i,
-			entry;
-
-		for ( i = 0; i < entries.length; i++ ) {
-			entry = entries[i];
-			liveblog.display_entry( entry, duration );
-		}
-	};
-
 	liveblog.get_entry_by_id = function( id ) {
 		return $( '#liveblog-entry-' + id );
 	};
 
-	liveblog.display_entry = function( new_entry, duration ) {
-		if ( new_entry instanceof liveblog.Entry ) {
-			new_entry = new_entry.attributes;
-		}
-
-		var $entry = liveblog.get_entry_by_id( new_entry.id );
-		if ('new' === new_entry.type && !$entry.length) {
-			liveblog.add_entry( new_entry, duration );
-		} else if ('update' === new_entry.type && $entry.length) {
-			liveblog.update_entry( $entry, new_entry );
-		} else if ('delete' === new_entry.type && $entry.length) {
-			liveblog.delete_entry( $entry );
-		}
-
-		$( document.body ).trigger( 'post-load' );
-	};
-
-	liveblog.add_entry = function( new_entry, duration ) {
-		var $new_entry = $( new_entry.html );
-		$new_entry.addClass('highlight').prependTo( liveblog.$entry_container ).animate({backgroundColor: 'white'}, {duration: duration});
-		liveblog.entriesContainer.updateTimes();
-	};
 
 	liveblog.update_entry = function( $entry, updated_entry ) {
 		$entry.replaceWith( updated_entry.html );
@@ -327,30 +331,6 @@ window.liveblog = window.liveblog || {};
 		liveblog.get_hidden_entries().addClass('highlight').removeClass( 'liveblog-hidden' ).animate({backgroundColor: 'white'}, {duration: 5000});
 	};
 
-	liveblog.ajax_request = function( url, data, success_callback, error_callback, method ) {
-		if ( 'function' !== typeof( success_callback ) ) {
-			success_callback = liveblog.success_callback;
-		}
-
-		if ( 'function' !== typeof( error_callback ) ) {
-			error_callback = liveblog.error_callback;
-		}
-
-		method = method || 'GET';
-
-		$.ajax( {
-			url: url,
-			data: data,
-			type: method,
-			dataType: 'json',
-			success: success_callback,
-			error: error_callback
-		} );
-	};
-
-	liveblog.success_callback = function() {};
-	liveblog.error_callback   = function() {};
-
 	liveblog.add_error = function( response, status ) {
 		var message;
 		if (response.status && response.status > 200) {
@@ -373,13 +353,8 @@ window.liveblog = window.liveblog || {};
 		return Math.floor( new Date().getTime() / 1000 );
 	};
 
-	liveblog.server_timestamp_from_xhr = function(xhr) {
-		var timestamp_milliseconds = Date.parse( xhr.getResponseHeader( 'Date' ) );
-		return Math.floor( timestamp_milliseconds / 1000 );
-	};
-
 	liveblog.is_at_the_top = function() {
-		return $(document).scrollTop()  < liveblog.$entry_container.offset().top;
+		return $(document).scrollTop()	< liveblog.$entry_container.offset().top;
 	};
 
 	// Initialize everything!
