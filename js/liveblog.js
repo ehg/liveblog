@@ -8,7 +8,7 @@ window.liveblog = window.liveblog || {};
 		el: '#liveblog-container',
 		initialize: function() {
 			liveblog.queue.on('reset', this.scrollToTop, this);
-			$(window).scroll($.throttle(250, this.flushQueueWhenOnTop));
+			$(window).scroll(_.throttle(250, this.flushQueueWhenOnTop));
 		},
 		scrollToTop: function() {
 			$(window).scrollTop(this.$el.offset().top);
