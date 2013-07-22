@@ -1,2 +1,5 @@
 wpcom-helper.php
 .svn
+test/bundle/*.js
+bin/mergejs
+libpeerconnection.log

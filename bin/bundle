@@ -1,0 +1,8 @@
+#!/bin/sh
+# Bundles liveblog's JavaScript and libraries, so we can test them
+# with karma
+(
+  cd test
+  ../bin/mergejs lib_require.txt bundle/lib.js
+  ../bin/mergejs app_require.txt bundle/app.js
+)

@@ -45,6 +45,28 @@ If you'd like to check out the code and contribute, [join us on github](https://
 6. Dragged photos are automatically inserted
 8. Typical liveblog view
 
+== Running the JavaScript tests ==
+
+The JavaScript unit tests are run with karma:
+
+http://karma-runner.github.io/
+
+Install the mergejs shell script:
+    cd bin
+    wget https://raw.github.com/eloone/mergejs/master/mergejs
+    chmod +x mergejs
+
+Generate the initial bundle:
+    bin/bundle
+
+Install test dependecies:
+    cd test
+    npm install
+
+Run karma:
+    cd test
+    ./node_modules/.bin/karma start
+
 == Changelog ==
 
 = 1.3 =
@@ -94,5 +116,3 @@ Fixed problems:
 
 = 1.0 =
 * Initial release
-
-

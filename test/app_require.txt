@@ -1,0 +1,3 @@
+../js/liveblog.js
+../js/liveblog-publisher.js
+../js/liveblog-admin.js
