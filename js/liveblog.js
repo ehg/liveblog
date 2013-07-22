@@ -2,6 +2,8 @@
 window.liveblog = window.liveblog || {};
 
 ( function( $ ) {
+	Backbone.emulateHTTP = true;
+
 	liveblog.EntriesView = Backbone.View.extend({
 		el: '#liveblog-container',
 		initialize: function() {
@@ -31,6 +33,22 @@ window.liveblog = window.liveblog || {};
 	});
 
 	liveblog.Entry = Backbone.Model.extend({});
+
+	liveblog.NewEntry = Backbone.Model.extend({
+		url: liveblog_settings.endpoint_url + 'crud',
+
+		sync: function(method_, model, options) {
+			var data = _.extend(model.attributes, {
+				'crud_action': 'insert',
+				'post_id': liveblog_settings.post_id
+			});
+
+			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
+			options.data = $.param(data);
+
+			return Backbone.sync.apply(this, ['create', model, options]);
+		}
+	});
 
 	liveblog.EntriesQueue = Backbone.Collection.extend({
 		model: liveblog.Entry,
