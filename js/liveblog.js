@@ -50,6 +50,22 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
+	liveblog.PublishedEntry = Backbone.Model.extend({
+		url: liveblog_settings.endpoint_url + 'crud',
+
+		sync: function(method_, model, options) {
+			var data = _.extend(model.attributes, {
+				'crud_action': 'update',
+				'post_id': liveblog_settings.post_id
+			});
+
+			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
+			options.data = $.param(data);
+
+			return Backbone.sync.apply(this, ['update', model, options]);
+		}
+	});
+
 	liveblog.EntriesQueue = Backbone.Collection.extend({
 		model: liveblog.Entry,
 		flush: function() {
