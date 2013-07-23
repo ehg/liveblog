@@ -56,14 +56,13 @@ describe('Model: PublishedEntry', function() {
 
 		before( function() {
 			ajaxStub = sinon.stub(jQuery, 'ajax');
+			entry.id = 10;
 			entry.save({content: 'bar'});
 		});
 
 		after( function() {
 			jQuery.ajax.restore();
 		});
-
-		it("it errors if it doesn't have an id set");
 
 		it('sends the correct POST request to the server', function() {
 			var correctArgs = ajaxStub.calledWithMatch({
@@ -72,7 +71,8 @@ describe('Model: PublishedEntry', function() {
 								.and(sinon.match('crud_action=update'))
 								.and(sinon.match(liveblog_settings.nonce_key +
 											'=' + liveblog_settings.nonce))
-								.and(sinon.match('post_id', liveblog_settings.post_id))
+								.and(sinon.match('post_id=' + liveblog_settings.post_id))
+								.and(sinon.match('entry_id=' + 10))
 			});
 
 			ajaxStub.calledOnce.should.equal(true);
