@@ -10,6 +10,40 @@ window.liveblog = window.liveblog || {};
 			liveblog.queue.on('reset', this.scrollToTop, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 		},
+
+		updateEntries: function(entry) {
+			var updating, deleting;
+
+			liveblog.consecutive_failures_count = 0;
+
+
+			if ( liveblog.is_at_the_top() && entry) {
+				this.addEntry(entry);
+			} else {
+				// updating and deleting entries is rare enough, so that we can screw the user's scroll and not queue those events
+				//liveblog.display_entries(modifying);
+			}
+
+			this.updateTimes();
+			liveblog.reset_timer();
+			liveblog.undelay_timer();
+			$( document.body ).trigger( 'post-load' ); // waht does this do?
+		},
+
+		addEntry: function( new_entry ) {
+			var $existingEntry = $('#liveblog-entry-' + new_entry.id),
+					animationDuration = liveblog.queue.length * 1000
+																* liveblog_settings.fade_out_duration;
+
+			if (0 >= $existingEntry.length) {
+				var $new_entry = $( new_entry.get('html') );
+				$new_entry.addClass('highlight')
+					.prependTo( liveblog.$entry_container )
+					.animate({backgroundColor: 'white'},
+									 {duration: this.animationDuration});
+			}
+		},
+
 		scrollToTop: function() {
 			$(window).scrollTop(this.$el.offset().top);
 		},
@@ -61,6 +95,10 @@ window.liveblog = window.liveblog || {};
 			});
 
 			return liveblog.NewEntry.__super__.sync(method, model, options);
+		},
+
+		parse: function(response, options) {
+			return _.extend(this.attributes, response.entries[0]);
 		}
 	});
 

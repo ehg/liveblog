@@ -114,12 +114,11 @@
 			return null;
 		},
 		success: function(model, response, options) {
-			console.log(options);
 			this.enable();
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.reset_timer();
-			liveblog.get_recent_entries_success(model, response);
+			liveblog.entriesContainer.updateEntries(model);
 		},
 		error: function(model, xhr, options) {
 			liveblog.add_error(response, status);
