@@ -40,7 +40,8 @@ window.liveblog = window.liveblog || {};
 		sync: function(method_, model, options) {
 			var data = _.extend(model.attributes, {
 				'crud_action': 'insert',
-				'post_id': liveblog_settings.post_id
+				'post_id': liveblog_settings.post_id,
+				'type': 'new'
 			});
 
 			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;

@@ -31,6 +31,7 @@ describe('Model: NewEntry', function() {
 								.and(sinon.match(liveblog_settings.nonce_key +
 											'=' + liveblog_settings.nonce))
 								.and(sinon.match('post_id', liveblog_settings.post_id))
+								.and(sinon.match('type', 'new'))
 			});
 
 			ajaxStub.calledOnce.should.equal(true);
