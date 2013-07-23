@@ -1,3 +1,5 @@
+window.$ = jQuery;
+
 window.liveblog_settings = {
 				'permalink'              : 'blah',
 				'post_id'                : '2',

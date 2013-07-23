@@ -1,7 +1,9 @@
 // Karma configuration
 // Generated on Mon Jul 22 2013 14:31:02 GMT+0100 (BST)
+var WP_BASE_URL = process.env.BASE_URL || 'http://localhost:8080/wordpress';
 
 module.exports = function(config) {
+
   config.set({
 
     // base path, that will be used to resolve files and exclude
@@ -14,14 +16,16 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-     {pattern: 'lib/*.js', included: false},
+     {pattern: WP_BASE_URL + '/wp-includes/js/jquery/jquery.js', include: true},
+     {pattern: WP_BASE_URL + '/wp-includes/js/underscore.min.js', include: true},
+     {pattern: WP_BASE_URL + '/wp-includes/js/backbone.min.js', include: true},
      {pattern: 'bundle/lib.js', included: true},
      {pattern: 'fixtures.html', included: true},
      {pattern: 'fixtures.js', included: true},
      {pattern: '../js/*.js', included: false},
      {pattern: 'bundle/app.js', included: true},
-     { pattern: 'node_modules/chai/chai.js', watched: false, included: true },
-     { pattern: 'node_modules/sinon/pkg/sinon.js', watched: false, included: true },
+     {pattern: 'node_modules/chai/chai.js', watched: false, included: true},
+     {pattern: 'node_modules/sinon/pkg/sinon.js', watched: false, included: true },
      {pattern: 'unit/*.js', included: true}
     ],
 
