@@ -80,6 +80,14 @@ window.liveblog = window.liveblog || {};
 		},
 
 		parse: function(response, options) {
+			var timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
+		  liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
+			liveblog.latest_response_local_timestamp  = liveblog.current_timestamp();
+
+		  if ( response && response.latest_timestamp ) {
+				liveblog.latest_entry_timestamp = response.latest_timestamp;
+			}
+
 			return response.entries;
 		},
 
@@ -242,12 +250,6 @@ window.liveblog = window.liveblog || {};
 	};
 
 	liveblog.get_recent_entries = function() {
-		var url  = liveblog_settings.endpoint_url,
-			from = liveblog.latest_entry_timestamp + 1,
-			local_diff = liveblog.current_timestamp() - liveblog.latest_response_local_timestamp,
-			to         = liveblog.latest_response_server_timestamp + local_diff;
-
-		url += from + '/' + to + '/';
 		liveblog.show_spinner();
 		liveblog.ajax_request( url, {}, liveblog.get_recent_entries_success, liveblog.get_recent_entries_error );
 	};
