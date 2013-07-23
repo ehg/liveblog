@@ -46,7 +46,22 @@
 		},
 		submit: function(e) {
 			e.preventDefault();
-			this.crud('insert');
+			var new_entry_content = this.$textarea.val(),
+			entry = new liveblog.NewEntry();
+
+			if ( ! new_entry_content ) {
+				return;
+			}
+
+			this.disable();
+			this.show_spinner();
+
+			entry.save({
+				content: new_entry_content
+			});
+
+			entry.on('sync', this.success, this);
+			entry.on('error', this.error, this);
 		},
 		entry_keyhandler: function(e) {
 			var cmd_ctrl_key = (e.metaKey && !e.ctrlKey) || e.ctrlKey;
@@ -98,30 +113,15 @@
 		get_id_for_ajax_request: function() {
 			return null;
 		},
-		crud: function(action) {
-			var new_entry_content = this.$textarea.val(),
-				data = {
-					crud_action: action,
-					post_id: liveblog_settings.post_id,
-					entry_id: this.get_id_for_ajax_request(),
-					content: new_entry_content
-				};
-			if ( ! new_entry_content ) {
-				return;
-			}
-			data[liveblog_settings.nonce_key] = liveblog.publisher.nonce;
-			this.disable();
-			this.show_spinner();
-			liveblog.ajax_request( liveblog_settings.endpoint_url + 'crud', data, _.bind(this.success, this), _.bind(this.error, this), 'POST' );
-		},
-		success: function(response, status, xhr) {
+		success: function(model, response, options) {
+			console.log(options);
 			this.enable();
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.reset_timer();
-			liveblog.get_recent_entries_success(response, status, xhr);
+			liveblog.get_recent_entries_success(model, response);
 		},
-		error: function(response, status) {
+		error: function(model, xhr, options) {
 			liveblog.add_error(response, status);
 			this.enable();
 			this.hide_spinner();
