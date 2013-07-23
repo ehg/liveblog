@@ -67,7 +67,7 @@ window.liveblog = window.liveblog || {};
 	});
 
 	liveblog.EntriesQueue = Backbone.Collection.extend({
-		model: liveblog.Entry,
+		model: liveblog.PublishedEntry,
 
 		url: function() {
 			var url  = liveblog_settings.endpoint_url,
@@ -250,23 +250,15 @@ window.liveblog = window.liveblog || {};
 	};
 
 	liveblog.get_recent_entries = function() {
-		liveblog.show_spinner();
-		liveblog.ajax_request( url, {}, liveblog.get_recent_entries_success, liveblog.get_recent_entries_error );
+		liveblog.queue.fetch();
 	};
 
-	liveblog.get_recent_entries_success = function( response, status, xhr ) {
+	liveblog.get_recent_entries_success = function( model, response) {
 		var added, modifying;
 
 		liveblog.consecutive_failures_count = 0;
 
 		liveblog.hide_spinner();
-
-		if ( response && response.latest_timestamp ) {
-			liveblog.latest_entry_timestamp = response.latest_timestamp;
-		}
-
-		liveblog.latest_response_server_timestamp = liveblog.server_timestamp_from_xhr( xhr );
-		liveblog.latest_response_local_timestamp  = liveblog.current_timestamp();
 
 		if ( response.entries.length ) {
 			if ( liveblog.is_at_the_top() && liveblog.queue.isEmpty() ) {
