@@ -54,10 +54,12 @@ window.liveblog = window.liveblog || {};
 	liveblog.PublishedEntry = Backbone.Model.extend({
 		url: liveblog_settings.endpoint_url + 'crud',
 
-		sync: function(method_, model, options) {
+		sync: function(method, model, options) {
 			var data = _.extend(model.attributes, {
-				'crud_action': 'update',
-				'post_id': liveblog_settings.post_id
+				'crud_action': method,
+				'post_id': liveblog_settings.post_id,
+				'entry_id': model.id,
+				'type': method // TODO: is this necessary?
 			});
 
 			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
