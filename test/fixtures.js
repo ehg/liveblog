@@ -33,3 +33,10 @@ window.wp = {Uploader: function(){}};
 $('head').append(__html__['fixtures.html']);
 
 window.momentLang = {};
+
+window.entryQueueResponse = {
+	"entries":	[
+		{"id":"14","type":"new","html":"generated html"}
+	],
+	"latest_timestamp":null
+};

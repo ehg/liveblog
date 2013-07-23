@@ -68,6 +68,21 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.EntriesQueue = Backbone.Collection.extend({
 		model: liveblog.Entry,
+
+		url: function() {
+			var url  = liveblog_settings.endpoint_url,
+				from = liveblog.latest_entry_timestamp + 1,
+				local_diff = liveblog.current_timestamp() - liveblog.latest_response_local_timestamp,
+				to         = liveblog.latest_response_server_timestamp + local_diff;
+
+			url += from + '/' + to + '/';
+			return url;
+		},
+
+		parse: function(response, options) {
+			return response.entries;
+		},
+
 		flush: function() {
 			if (this.isEmpty()) {
 				return;
