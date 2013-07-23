@@ -32,40 +32,46 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
-	liveblog.Entry = Backbone.Model.extend({});
-
-	liveblog.NewEntry = Backbone.Model.extend({
+	liveblog.Entry = Backbone.Model.extend({
 		url: liveblog_settings.endpoint_url + 'crud',
 
-		sync: function(method_, model, options) {
+		sync: function(method, model, options) {
+		  var methodMap = {
+				'create': 'insert',
+				'update': 'update',
+				'delete': 'delete'
+			};
+
 			var data = _.extend(model.attributes, {
-				'crud_action': 'insert',
-				'post_id': liveblog_settings.post_id,
-				'type': 'new'
+				'crud_action': methodMap[method],
+				'post_id': liveblog_settings.post_id
 			});
 
 			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
 			options.data = $.param(data);
 
-			return Backbone.sync.apply(this, ['create', model, options]);
+			return Backbone.sync.apply(this, [method, model, options]);
 		}
 	});
 
-	liveblog.PublishedEntry = Backbone.Model.extend({
-		url: liveblog_settings.endpoint_url + 'crud',
-
+	liveblog.NewEntry = liveblog.Entry.extend({
 		sync: function(method, model, options) {
-			var data = _.extend(model.attributes, {
-				'crud_action': method,
-				'post_id': liveblog_settings.post_id,
+			model.attributes = _.extend(model.attributes, {
+				'type': 'new'
+			});
+
+			return liveblog.NewEntry.__super__.sync(method, model, options);
+		}
+	});
+
+	liveblog.PublishedEntry = liveblog.Entry.extend({
+		sync: function(method, model, options) {
+			model.attributes = _.extend(model.attributes, {
 				'entry_id': model.id,
 				'type': method // TODO: is this necessary?
 			});
 
-			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
-			options.data = $.param(data);
-
-			return Backbone.sync.apply(this, ['update', model, options]);
+			return liveblog.PublishedEntry.__super__.sync(method, model, options);
 		}
 	});
 
