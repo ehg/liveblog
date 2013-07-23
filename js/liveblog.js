@@ -6,6 +6,10 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.EntriesView = Backbone.View.extend({
 		el: '#liveblog-container',
+		events: {
+			'click .liveblog-entry-edit': 'editClick'
+		},
+
 		initialize: function() {
 			liveblog.queue.on('reset', this.scrollToTop, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
@@ -20,8 +24,10 @@ window.liveblog = window.liveblog || {};
 			if ( liveblog.is_at_the_top() && entry) {
 				this.addEntry(entry);
 			} else {
+				updating =  liveblog.queue.filter(function(entry) { return 'update' === entry.get('type'); } );
 				// updating and deleting entries is rare enough, so that we can screw the user's scroll and not queue those events
 				//liveblog.display_entries(modifying);
+				_.each(updating, this.updateEntry, this);
 			}
 
 			this.updateTimes();
@@ -44,6 +50,11 @@ window.liveblog = window.liveblog || {};
 			}
 		},
 
+		updateEntry: function( entry ) {
+			var $existingEntry = $('#liveblog-entry-' + entry.id);
+			$existingEntry.replaceWith(entry.get('html'));
+		},
+
 		scrollToTop: function() {
 			$(window).scrollTop(this.$el.offset().top);
 		},
@@ -63,6 +74,20 @@ window.liveblog = window.liveblog || {};
 		},
 		formatTimestamp: function(timestamp) {
 			return moment.unix(timestamp).fromNow();
+		},
+
+		editClick: function(event) {
+			var entry = $( event.target ).closest( '.liveblog-entry' ),
+			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
+			model = new liveblog.PublishedEntry();
+			model.id = id;
+			var form = new liveblog.EditEntryView({model: model, entry: entry});
+			if ( !id ) {
+				return;
+			}
+			form.render();
+			entry.find( '.liveblog-entry-edit' ).hide();
+			entry.find('.liveblog-entry-actions .liveblog-entry-delete').hide();
 		}
 	});
 
@@ -85,6 +110,16 @@ window.liveblog = window.liveblog || {};
 			options.data = $.param(data);
 
 			return Backbone.sync.apply(this, [method, model, options]);
+		},
+		parse: function(response, options) {
+			var parsed;
+
+			if (response.entries) {
+				parsed = _.extend(this.attributes, response.entries[0]);
+			} else {
+				parsed = response;
+			}
+			return parsed;
 		}
 	});
 
