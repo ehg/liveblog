@@ -12,6 +12,7 @@ window.liveblog = window.liveblog || {};
 		},
 
 		initialize: function() {
+			_.bindAll(this, 'deleteError');
 			liveblog.queue.on('reset', function(){
 				this.updateEntries();
 			}, this);
@@ -111,7 +112,11 @@ window.liveblog = window.liveblog || {};
 			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
 			model = new liveblog.PublishedEntry({id: id, type: 'delete'});
 			liveblog.queue.add(model);
-			model.destroy({wait: true});
+			model.destroy({wait: true, error: this.deleteError});
+		},
+
+		deleteError: function(model, response, options) {
+			liveblog.add_error(response);
 		}
 	});
 

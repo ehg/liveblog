@@ -121,7 +121,7 @@
 			liveblog.entriesContainer.updateEntries(model);
 		},
 		error: function(model, xhr, options) {
-			liveblog.add_error(response, status);
+			liveblog.add_error(xhr);
 			this.enable();
 			this.hide_spinner();
 		},
@@ -207,7 +207,7 @@
 			$( document.body ).trigger( 'post-load' );
 		},
 		error: function(model, xhr, options) {
-			liveblog.add_error( xhr.response, xhr.status );
+			liveblog.add_error(xhr);
 			this.form.enable();
 			this.form.switch_to_entry();
 		},
