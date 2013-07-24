@@ -202,6 +202,7 @@ window.liveblog = window.liveblog || {};
 				this.consecutiveFailuresCount = 0;
 				this.undelayTimer();
 				this.resetTimer();
+				liveblog.hide_spinner();
 			}, this);
 
 		},
@@ -254,6 +255,7 @@ window.liveblog = window.liveblog || {};
 		},
 
 		fetch: function() {
+			liveblog.show_spinner();
 			liveblog.EntriesQueue.__super__.fetch.call(this, {error: this.onFetchError});
 		},
 
