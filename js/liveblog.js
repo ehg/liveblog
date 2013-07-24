@@ -22,8 +22,6 @@ window.liveblog = window.liveblog || {};
 		updateEntries: function(entry) {
 			var updating, deleting;
 
-			//TODO: move to EntriesQueue
-			liveblog.consecutive_failures_count = 0;
 
 
 			if ( liveblog.is_at_the_top() && entry) {
@@ -188,13 +186,15 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.EntriesQueue = Backbone.Collection.extend({
 		model: liveblog.PublishedEntry,
+		consecutiveFailuresCount: 0,
 
 		initialize: function() {
-			_.bindAll(this, 'fetch');
+			_.bindAll(this, 'fetch', 'onFetchError', 'resetTimer');
 
 			this.setInitialTimestamps();
 			this.resetTimer();
 			this.on('reset', function() {
+				this.consecutiveFailuresCount = 0;
 				this.undelayTimer();
 				this.resetTimer();
 			}, this);
@@ -246,6 +246,29 @@ window.liveblog = window.liveblog || {};
 				return;
 			}
 			this.reset([]);
+		},
+
+		fetch: function() {
+			liveblog.EntriesQueue.__super__.fetch.call(this, {error: this.onFetchError});
+		},
+
+		onFetchError: function(collection, response, options) {
+			liveblog.hide_spinner();
+			console.log('fail count', this.consecutiveFailuresCount);
+
+			// Have a max number of checks, which causes the auto-update to shut off or slow down the auto-update
+			this.consecutiveFailuresCount++;
+
+			if ( 0 === this.consecutiveFailuresCount % liveblog_settings.delay_threshold ) {
+				this.delayTimer();
+			}
+
+			if ( this.consecutiveFailuresCount >= liveblog_settings.max_consecutive_retries ) {
+				this.killTimer();
+				return;
+		}
+			liveblog.queue.resetTimer();
+			// TODO: do we need to inform the user?
 		},
 
 		setInitialTimestamps: function() {
@@ -384,37 +407,14 @@ window.liveblog = window.liveblog || {};
 		setInterval(tick, 60 * 1000);
 	};
 
-	// Move to EntriesQueue
-	liveblog.get_recent_entries_error = function() {
-
-		liveblog.hide_spinner();
-
-		// Have a max number of checks, which causes the auto-update to shut off or slow down the auto-update
-		if ( ! liveblog.consecutive_failures_count ) {
-			liveblog.consecutive_failures_count = 0;
-		}
-
-		liveblog.consecutive_failures_count++;
-
-		if ( 0 === liveblog.consecutive_failures_count % liveblog_settings.delay_threshold ) {
-			liveblog.delay_timer();
-		}
-
-		if ( liveblog.consecutive_failures_count >= liveblog_settings.max_consecutive_retries ) {
-			liveblog.killTimer();
-			return;
-		}
-
-		liveblog.queue.resetTimer();
-	};
 
 	// Make ErrorView
-	liveblog.add_error = function( response, status ) {
+	liveblog.add_error = function( response ) {
 		var message;
-		if (response.status && response.status > 200) {
+		if (response.status && (response.status > 200 || response.status === 0)) {
 			message = liveblog_settings.error_message_template.replace('{error-code}', response.status).replace('{error-message}', response.statusText);
 		} else {
-			message = liveblog_settings.short_error_message_template.replace('{error-message}', status);
+			message = liveblog_settings.short_error_message_template.replace('{error-message}', response.status);
 		}
 		alert(message);
 	};
