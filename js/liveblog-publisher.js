@@ -228,5 +228,5 @@
 
 	};
 
-	liveblog.$events.bind( 'after-init', liveblog.publisher.init );
+	Backbone.on( 'after-init', liveblog.publisher.init );
 } )( jQuery );

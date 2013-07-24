@@ -407,9 +407,8 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
-	// A dummy proxy DOM element, which allows us to use arbitrary events
-	// via the jQuery events system
-	liveblog.$events = $( '<span />' );
+	// Global event bus
+	_.extend(Backbone, Backbone.Events);
 
 	liveblog.init = function() {
 		liveblog.$entry_container = $( '#liveblog-entries'        );
@@ -420,14 +419,14 @@ window.liveblog = window.liveblog || {};
 		liveblog.fixedError = new liveblog.FixedErrorView();
 		liveblog.entriesContainer = new liveblog.EntriesView();
 		liveblog.titleBarCount = new liveblog.TitleBarCountView();
-		liveblog.$events.trigger( 'after-views-init' );
+		Backbone.trigger( 'after-views-init' );
 
 		liveblog.init_moment_js();
 
 		liveblog.cast_settings_numbers();
 		liveblog.start_human_time_diff_timer();
 
-		liveblog.$events.trigger( 'after-init' );
+		Backbone.trigger( 'after-init' );
 	};
 
 	liveblog.init_moment_js = function() {
