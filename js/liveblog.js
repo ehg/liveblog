@@ -18,6 +18,11 @@ window.liveblog = window.liveblog || {};
 			}, this);
 			liveblog.queue.on('destroy', this.deleteEntry, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
+
+			liveblog.queue.on('stoppedPolling', function() {
+				// TODO: i18n
+				liveblog.fixedError.show("Oh no. Something's gone wrong, and we've stopped updating the live blog, please try and refresh!", true);
+			});
 		},
 
 		updateEntries: function(entry) {
@@ -259,7 +264,6 @@ window.liveblog = window.liveblog || {};
 
 		onFetchError: function(collection, response, options) {
 			liveblog.hide_spinner();
-			console.log('fail count', this.consecutiveFailuresCount);
 
 			// Have a max number of checks, which causes the auto-update to shut off or slow down the auto-update
 			this.consecutiveFailuresCount++;
@@ -270,10 +274,10 @@ window.liveblog = window.liveblog || {};
 
 			if ( this.consecutiveFailuresCount >= liveblog_settings.max_consecutive_retries ) {
 				this.killTimer();
+				this.trigger('stoppedPolling');
 				return;
 		}
 			liveblog.queue.resetTimer();
-			// TODO: do we need to inform the user?
 		},
 
 		setInitialTimestamps: function() {
@@ -367,13 +371,24 @@ window.liveblog = window.liveblog || {};
 	liveblog.FixedErrorView = Backbone.View.extend({
 		el: '#liveblog-fixed-error',
 
-		show: function(response) {
-			this.$el.html(this._getErrorText(response));
+		show: function(error, sticky) {
+			var message;
+			if('object' === typeof error) {
+				message = this._getErrorFromResponse(error);
+		  } else {
+				message = error;
+			}
+
+			this.$el.html(message);
 			this._moveBelowAdminBar();
-			this.$el.show().delay(5000).fadeOut();
+			this.$el.show();
+
+		  if (!sticky) {
+				this.$el.delay(5000).fadeOut();
+			}
 		},
 
-		_getErrorText: function(response) {
+		_getErrorFromResponse: function(response) {
 			var message;
 			if (response.status && response.status > 200 ) {
 				message = liveblog_settings.error_message_template.replace('{error-code}', response.status).replace('{error-message}', response.statusText);
