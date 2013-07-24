@@ -9,6 +9,31 @@ describe('Collection: EntriesQueue', function() {
 		queue = new liveblog.EntriesQueue();
 	});
 
+	context('when the collection is populated', function() {
+		before(function(){
+			queue.add([
+				new liveblog.PublishedEntry({id: 1, type: 'delete'}),
+				new liveblog.PublishedEntry({id: 2, type: 'update', html: 'foo'}),
+				new liveblog.PublishedEntry({id: 3, type: 'new', html: 'bar'})
+			]);
+		});
+
+		it('can filter inserted entries', function() {
+			queue.inserted().length.should.equal(1);
+			queue.inserted().at(0).get('type').should.equal('new');
+		});
+
+		it('can filter updated entries', function() {
+			queue.updated().length.should.equal(1);
+			queue.updated().at(0).get('type').should.equal('update');
+		});
+
+		it('can filter added entries', function() {
+			queue.deleted().length.should.equal(1);
+			queue.deleted().at(0).get('type').should.equal('delete');
+		});
+	});
+
 	context('when the EntryQueue is fetched', function() {
 		var fakeServer,
 			serverTimestamp,

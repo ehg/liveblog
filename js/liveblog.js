@@ -196,31 +196,30 @@ window.liveblog = window.liveblog || {};
 
 			return response.entries;
 		},
+		updated: function() {
+			var filtered = this.filter(function(entry) {
+				return 'update' === entry.get('type');
+			});
+			return new Backbone.Collection(filtered);
+		},
+		deleted: function() {
+			var filtered = this.filter(function(entry) {
+				return 'delete' === entry.get('type');
+			});
+			return new Backbone.Collection(filtered);
+		},
+		inserted: function() {
+			var filtered = this.filter(function(entry) {
+				return 'new' === entry.get('type');
+			});
+			return new Backbone.Collection(filtered);
+		},
 
 		flush: function() {
 			if (this.isEmpty()) {
 				return;
 			}
-			liveblog.display_entries(this.models);
 			this.reset([]);
-		},
-		applyModifyingEntries: function(entries) {
-			var collection = this;
-			_.each(entries, function(entry) {
-				collection.applyModifyingEntry(entry);
-			});
-		},
-		applyModifyingEntry: function(modifying) {
-			var existing = this.get(modifying.id);
-			if (!existing) {
-				return;
-			}
-			if ('delete' === modifying.type) {
-				this.remove(existing);
-			}
-			if ('update' === modifying.type) {
-				existing.set('html', modifying.html);
-			}
 		}
 	});
 
