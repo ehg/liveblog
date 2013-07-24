@@ -125,4 +125,32 @@ describe('Actions between browsers', function() {
       });
     });
   });
+
+  context('when I delete the entry in the sending browser', function() {
+    before(function( done ) {
+      sndWd40.browser.elementsByCssSelector( '.liveblog-entry', function( err, elements ) {
+        elements[0].getAttribute('id', function( err, _id ) {
+          id = _id;
+          done(err);
+        });
+      });
+    });
+
+    before(function( done ) {
+      sndWd40.click('#' + id + ' .liveblog-entry-delete', done);
+    });
+
+    before(function( done ) {
+      sndWd40.browser.acceptAlert(done);
+    });
+
+    it('shows a nag view in the receiving browser', function( done ) {
+      rcvWd40.browser.waitForVisibleByCssSelector('#liveblog-fixed-nag', 10 * 1000, done);
+    });
+
+    it('gets removed from the page', function(done) {
+      sndWd40.waitForInvisibleByCss('#' + id, done);
+    });
+
+  });
 });
