@@ -115,6 +115,17 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
+	liveblog.PreviewEntry = Backbone.Model.extend({
+		url: liveblog_settings.endpoint_url + 'preview',
+
+		sync: function(method, model, options) {
+			model.attributes[liveblog_settings.nonce_key] = liveblog_settings.nonce;
+			options.data = $.param(model.attributes);
+
+			return Backbone.sync.apply(this, [method, model, options]);
+		}
+	});
+
 	liveblog.Entry = Backbone.Model.extend({
 		url: liveblog_settings.endpoint_url + 'crud',
 
