@@ -12,7 +12,9 @@ window.liveblog = window.liveblog || {};
 		},
 
 		initialize: function() {
-			liveblog.queue.on('reset', this.scrollToTop, this);
+			liveblog.queue.on('reset', function(){
+				this.updateEntries();
+			}, this);
 			liveblog.queue.on('destroy', this.deleteEntry, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 		},
