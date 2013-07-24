@@ -23,8 +23,6 @@ window.liveblog = window.liveblog || {};
 		updateEntries: function(entry) {
 			var updating, deleting;
 
-
-
 			if ( liveblog.is_at_the_top() && entry) {
 				this.addEntry(entry);
 			} else {
@@ -116,7 +114,7 @@ window.liveblog = window.liveblog || {};
 		},
 
 		deleteError: function(model, response, options) {
-			liveblog.add_error(response);
+			liveblog.fixedError.show(response);
 		}
 	});
 
@@ -366,6 +364,34 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
+	liveblog.FixedErrorView = Backbone.View.extend({
+		el: '#liveblog-fixed-error',
+
+		show: function(response) {
+			this.$el.html(this._getErrorText(response));
+			this._moveBelowAdminBar();
+			this.$el.show().delay(5000).fadeOut();
+		},
+
+		_getErrorText: function(response) {
+			var message;
+			if (response.status && response.status > 200 ) {
+				message = liveblog_settings.error_message_template.replace('{error-code}', response.status).replace('{error-message}', response.statusText);
+			} else {
+				message = liveblog_settings.short_error_message_template.replace('{error-message}', response.status);
+			}
+			return message;
+		},
+
+		//TODO: factor out
+		_moveBelowAdminBar: function() {
+			var $adminbar = $('#wpadminbar');
+			if ($adminbar.length) {
+				this.$el.css('top', $adminbar.height());
+			}
+		}
+	});
+
 	// A dummy proxy DOM element, which allows us to use arbitrary events
 	// via the jQuery events system
 	liveblog.$events = $( '<span />' );
@@ -376,6 +402,7 @@ window.liveblog = window.liveblog || {};
 
 		liveblog.queue = new liveblog.EntriesQueue();
 		liveblog.fixedNag = new liveblog.FixedNagView();
+		liveblog.fixedError = new liveblog.FixedErrorView();
 		liveblog.entriesContainer = new liveblog.EntriesView();
 		liveblog.titleBarCount = new liveblog.TitleBarCountView();
 		liveblog.$events.trigger( 'after-views-init' );
@@ -415,16 +442,6 @@ window.liveblog = window.liveblog || {};
 	};
 
 
-	// Make ErrorView
-	liveblog.add_error = function( response ) {
-		var message;
-		if (response.status && (response.status > 200 || response.status === 0)) {
-			message = liveblog_settings.error_message_template.replace('{error-code}', response.status).replace('{error-message}', response.statusText);
-		} else {
-			message = liveblog_settings.short_error_message_template.replace('{error-message}', response.status);
-		}
-		alert(message);
-	};
 
 	liveblog.show_spinner = function() {
 		liveblog.$spinner.spin( 'small' );

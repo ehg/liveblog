@@ -364,3 +364,16 @@ a.liveblog-form-entry::-webkit-input-placeholder {
 	display: inline-block;
 	vertical-align: middle;
 }
+#liveblog-fixed-error {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	color: white;
+	text-align: center;
+	-webkit-box-shadow: 0px 0px 8px 0px #000000;
+	-moz-box-shadow: 0px 0px 8px 0px #000000;
+	box-shadow: 0px 0px 8px 0px #000000;
+	background-color: #B40404;
+}

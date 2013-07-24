@@ -15,5 +15,9 @@
 		<a href="#">
 		</a>
 	</div>
+	<div id="liveblog-fixed-error">
+		<a href="#">
+		</a>
+	</div>
 
 </div>
