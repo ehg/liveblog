@@ -117,7 +117,7 @@
 			this.enable();
 			this.hide_spinner();
 			this.$textarea.val('');
-			liveblog.reset_timer();
+			liveblog.queue.resetTimer();
 			liveblog.entriesContainer.updateEntries(model);
 		},
 		error: function(model, xhr, options) {

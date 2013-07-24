@@ -34,8 +34,8 @@ window.liveblog = window.liveblog || {};
 			}
 
 			this.updateTimes();
-			liveblog.reset_timer();
-			liveblog.undelay_timer();
+			liveblog.queue.resetTimer();
+			liveblog.queue.undelayTimer();
 			$( document.body ).trigger( 'post-load' ); // waht does this do?
 		},
 
@@ -190,16 +190,21 @@ window.liveblog = window.liveblog || {};
 		model: liveblog.PublishedEntry,
 
 		initialize: function() {
+			_.bindAll(this, 'fetch');
+
+			this.setInitialTimestamps();
+			this.resetTimer();
 			this.on('reset', function() {
-				liveblog.undelay_timer();
-				liveblog.reset_timer();
-			});
+				this.undelayTimer();
+				this.resetTimer();
+			}, this);
+
 		},
 
 		url: function() {
 			var url  = liveblog_settings.endpoint_url,
 				from = liveblog.latest_entry_timestamp + 1,
-				local_diff = liveblog.current_timestamp() - liveblog.latest_response_local_timestamp,
+				local_diff = this.currentTimestamp() - liveblog.latest_response_local_timestamp,
 				to         = liveblog.latest_response_server_timestamp + local_diff;
 
 			url += from + '/' + to + '/';
@@ -209,7 +214,7 @@ window.liveblog = window.liveblog || {};
 		parse: function(response, options) {
 			var timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
 		  liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
-			liveblog.latest_response_local_timestamp  = liveblog.current_timestamp();
+			liveblog.latest_response_local_timestamp  = this.currentTimestamp();
 
 		  if ( response && response.latest_timestamp ) {
 				liveblog.latest_entry_timestamp = response.latest_timestamp;
@@ -241,6 +246,39 @@ window.liveblog = window.liveblog || {};
 				return;
 			}
 			this.reset([]);
+		},
+
+		setInitialTimestamps: function() {
+			var now = this.currentTimestamp();
+			liveblog.latest_entry_timestamp           = liveblog_settings.latest_entry_timestamp || 0;
+			liveblog.latest_response_local_timestamp  = now;
+			liveblog.latest_response_server_timestamp = now;
+		},
+
+		killTimer:  function() {
+			clearTimeout( liveblog.refresh_timeout );
+		},
+
+		resetTimer: function() {
+			this.killTimer();
+			liveblog.refresh_timeout = setTimeout( this.fetch, ( liveblog_settings.refresh_interval * 1000 ) );
+		},
+
+		undelayTimer: function() {
+			if ( liveblog_settings.original_refresh_interval ) {
+				liveblog_settings.refresh_interval = liveblog_settings.original_refresh_interval;
+			}
+		},
+
+		delayTimer: function() {
+			if ( ! liveblog_settings.original_refresh_interval ) {
+				liveblog_settings.original_refresh_interval = liveblog_settings.refresh_interval;
+			}
+			liveblog_settings.refresh_interval *= liveblog_settings.delay_multiplier;
+		},
+
+		currentTimestamp: function() {
+			return Math.floor( new Date().getTime() / 1000 );
 		}
 	});
 
@@ -315,8 +353,6 @@ window.liveblog = window.liveblog || {};
 		liveblog.init_moment_js();
 
 		liveblog.cast_settings_numbers();
-		liveblog.reset_timer();
-		liveblog.set_initial_timestamps();
 		liveblog.start_human_time_diff_timer();
 
 		liveblog.$events.trigger( 'after-init' );
@@ -327,12 +363,6 @@ window.liveblog = window.liveblog || {};
 		moment.lang(momentLang.locale, momentLang);
 	};
 
-	liveblog.set_initial_timestamps = function() {
-		var now = liveblog.current_timestamp();
-		liveblog.latest_entry_timestamp           = liveblog_settings.latest_entry_timestamp || 0;
-		liveblog.latest_response_local_timestamp  = now;
-		liveblog.latest_response_server_timestamp = now;
-	};
 
 	// wp_localize_scripts makes all integers into strings, and in JS
 	// we need them to be real integers, so that we can use them in
@@ -346,36 +376,6 @@ window.liveblog = window.liveblog || {};
 		liveblog_settings.fade_out_duration       = parseInt( liveblog_settings.fade_out_duration, 10 );
 	};
 
-	// Move to EntriesQueue
-	liveblog.kill_timer = function() {
-		clearTimeout( liveblog.refresh_timeout );
-	};
-
-	// Move to EntriesQueue
-	liveblog.reset_timer = function() {
-		liveblog.kill_timer();
-		var fetch = function() {
-			liveblog.queue.fetch();
-		};
-		liveblog.refresh_timeout = setTimeout( fetch, ( liveblog_settings.refresh_interval * 1000 ) );
-	};
-
-	// Move to EntriesQueue
-	liveblog.undelay_timer = function() {
-		if ( liveblog_settings.original_refresh_interval ) {
-			liveblog_settings.refresh_interval = liveblog_settings.original_refresh_interval;
-		}
-	};
-
-	// Move to EntriesQueue
-	liveblog.delay_timer = function() {
-		if ( ! liveblog_settings.original_refresh_interval ) {
-			liveblog_settings.original_refresh_interval = liveblog_settings.refresh_interval;
-		}
-
-		liveblog_settings.refresh_interval *= liveblog_settings.delay_multiplier;
-
-	};
 
 	// Move to EntriesView
 	liveblog.start_human_time_diff_timer = function() {
@@ -401,11 +401,11 @@ window.liveblog = window.liveblog || {};
 		}
 
 		if ( liveblog.consecutive_failures_count >= liveblog_settings.max_consecutive_retries ) {
-			liveblog.kill_timer();
+			liveblog.killTimer();
 			return;
 		}
 
-		liveblog.reset_timer();
+		liveblog.queue.resetTimer();
 	};
 
 	// Make ErrorView
@@ -427,16 +427,6 @@ window.liveblog = window.liveblog || {};
 		liveblog.$spinner.spin( false );
 	};
 
-	// Move to EntriesQueue
-	liveblog.current_timestamp = function() {
-		return Math.floor( new Date().getTime() / 1000 );
-	};
-
-	// Move to EntriesQueue
-	liveblog.server_timestamp_from_xhr = function(xhr) {
-		var timestamp_milliseconds = Date.parse( xhr.getResponseHeader( 'Date' ) );
-		return Math.floor( timestamp_milliseconds / 1000 );
-	};
 
 	liveblog.is_at_the_top = function() {
 		return $(document).scrollTop()  < liveblog.$entry_container.offset().top;
