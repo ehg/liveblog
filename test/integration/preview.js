@@ -3,11 +3,10 @@
 require('coffee-script');
 
 var wd = require('wd'),
-  helper = require(__dirname + '/../wd40'),
+  Wd40 = require(__dirname + '/../wd40').wd40,
   should = require('chai').should();
 
-var browser = helper.browser,
-  wd40 = helper.wd40;
+var wd40 = new Wd40();
 
 var BASE_URL = process.env.BASE_URL || 'http://localhost:8080/wordpress/',
     WP_USER = process.env.WP_USER || 'admin',
@@ -19,7 +18,7 @@ describe('Previewing an entry', function() {
   context("When I'm logged in as an admin", function() {
     before( function( done ) {
       wd40.init( function(err) {
-        browser.get(BASE_URL + '/wp-login.php', function(){
+        wd40.browser.get(BASE_URL + '/wp-login.php', function(){
           return done( err );
         });
       });
@@ -41,7 +40,7 @@ describe('Previewing an entry', function() {
           html = '<b class="bold">' + random + '</b>';
 
       before( function( done ) {
-        browser.get(BASE_URL + '/?p=1', function( err ){
+        wd40.browser.get(BASE_URL + '/?p=1', function( err ){
           return done( err );
         });
       });
