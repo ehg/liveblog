@@ -193,21 +193,21 @@
 			if (!content) {
 				return;
 			}
-			var data = {
-				entry_content: content
-			};
-			data[liveblog_settings.nonce_key] = liveblog.publisher.nonce;
 			this.form.disable();
 			this.$el.html(liveblog_publisher_settings.loading_preview);
-			liveblog.ajax_request( liveblog_settings.endpoint_url + 'preview', data, _.bind(this.success, this), _.bind(this.error, this), 'POST' );
+
+			this.model = new liveblog.PreviewEntry({entry_content: content});
+			this.model.on('sync', this.success, this);
+			this.model.on('error', this.error, this);
+			this.model.save();
 		},
-		success: function(response) {
+		success: function(model, response, options) {
 			this.form.enable();
-			this.$el.html( '<div class="liveblog-entry"><div class="liveblog-entry-text">' + response.html + '</div></div>' );
+			this.$el.html( '<div class="liveblog-entry"><div class="liveblog-entry-text">' + model.get('html') + '</div></div>' );
 			$( document.body ).trigger( 'post-load' );
 		},
-		error: function(response, status) {
-			liveblog.add_error( response, status );
+		error: function(model, xhr, options) {
+			liveblog.add_error( xhr.response, xhr.status );
 			this.form.enable();
 			this.form.switch_to_entry();
 		},
