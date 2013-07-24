@@ -226,31 +226,6 @@
 		liveblog.publisher.insert_form.render();
 		liveblog.publisher.nonce = liveblog_settings.nonce;
 
-		$('#liveblog-entries').on( 'click', '.liveblog-entry-delete', liveblog.publisher.delete_click );
-	};
-
-	liveblog.publisher.delete_click = function( e ) {
-		e.preventDefault();
-		var id = $( e.target ).closest( '.liveblog-entry' ).attr( 'id' ).replace( 'liveblog-entry-', '' );
-		if ( !id ) {
-			return;
-		}
-		if ( !confirm( liveblog_settings.delete_confirmation ) ) {
-			return;
-		}
-		liveblog.publisher.delete_entry( id );
-	};
-
-	liveblog.publisher.delete_entry = function( id ) {
-		var data = {
-			crud_action: 'delete',
-			post_id: liveblog_settings.post_id,
-			entry_id: id
-		};
-		data[liveblog_settings.nonce_key] = liveblog.publisher.nonce;
-		liveblog.publisher.insert_form.disable();
-		liveblog.publisher.insert_form.show_spinner();
-		liveblog.ajax_request( liveblog_settings.endpoint_url + 'crud', data, _.bind(liveblog.publisher.insert_form.success, liveblog.publisher.insert_form), _.bind(liveblog.publisher.insert_form.error, liveblog.publisher.insert_form), 'POST' );
 	};
 
 	liveblog.$events.bind( 'after-init', liveblog.publisher.init );

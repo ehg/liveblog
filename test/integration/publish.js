@@ -123,5 +123,29 @@ describe('Publishing a liveblog update', function() {
       });
     }); // end publish context
 
+    context('when I delete an entry', function() {
+      before(function( done ) {
+        browser.elementsByCssSelector( '.liveblog-entry', function( err, elements ) {
+          elements[0].getAttribute('id', function( err, _id ) {
+            id = _id;
+            done(err);
+          });
+        });
+      });
+
+      before(function( done ) {
+        wd40.click('#' + id + ' .liveblog-entry-delete', done);
+      });
+
+      before(function( done ) {
+        browser.acceptAlert(done);
+      });
+
+      it('gets removed from the page', function(done) {
+        wd40.waitForInvisibleByCss('#' + id, done);
+      });
+
+    });
+
   });
 });

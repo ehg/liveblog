@@ -7,27 +7,28 @@ window.liveblog = window.liveblog || {};
 	liveblog.EntriesView = Backbone.View.extend({
 		el: '#liveblog-container',
 		events: {
-			'click .liveblog-entry-edit': 'editClick'
+			'click .liveblog-entry-edit': 'editClick',
+			'click .liveblog-entry-delete': 'deleteClick'
 		},
 
 		initialize: function() {
 			liveblog.queue.on('reset', this.scrollToTop, this);
+			liveblog.queue.on('destroy', this.deleteEntry, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 		},
 
 		updateEntries: function(entry) {
 			var updating, deleting;
 
+			//TODO: move to EntriesQueue
 			liveblog.consecutive_failures_count = 0;
 
 
 			if ( liveblog.is_at_the_top() && entry) {
 				this.addEntry(entry);
 			} else {
-				updating =  liveblog.queue.filter(function(entry) { return 'update' === entry.get('type'); } );
-				// updating and deleting entries is rare enough, so that we can screw the user's scroll and not queue those events
-				//liveblog.display_entries(modifying);
-				_.each(updating, this.updateEntry, this);
+				liveblog.queue.updated().each(this.updateEntry, this);
+				liveblog.queue.deleted().each(this.deleteEntry, this);
 			}
 
 			this.updateTimes();
@@ -35,6 +36,11 @@ window.liveblog = window.liveblog || {};
 			liveblog.undelay_timer();
 			$( document.body ).trigger( 'post-load' ); // waht does this do?
 		},
+
+		addEntries: function() {
+			liveblog.queue.each(this.addEntry, this);
+		},
+
 
 		addEntry: function( new_entry ) {
 			var $existingEntry = $('#liveblog-entry-' + new_entry.id),
@@ -48,6 +54,11 @@ window.liveblog = window.liveblog || {};
 					.animate({backgroundColor: 'white'},
 									 {duration: this.animationDuration});
 			}
+		},
+
+		deleteEntry: function( entry ) {
+			var $existingEntry = $('#liveblog-entry-' + entry.id);
+			$existingEntry.remove();
 		},
 
 		updateEntry: function( entry ) {
@@ -88,6 +99,19 @@ window.liveblog = window.liveblog || {};
 			form.render();
 			entry.find( '.liveblog-entry-edit' ).hide();
 			entry.find('.liveblog-entry-actions .liveblog-entry-delete').hide();
+		},
+
+		deleteClick: function(event) {
+			event.preventDefault();
+			if ( !confirm( liveblog_settings.delete_confirmation ) ) {
+				return;
+			}
+
+			var entry = $( event.target ).closest( '.liveblog-entry' ),
+			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
+			model = new liveblog.PublishedEntry({id: id, type: 'delete'});
+			liveblog.queue.add(model);
+			model.destroy({wait: true});
 		}
 	});
 
