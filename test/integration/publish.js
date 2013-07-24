@@ -3,11 +3,10 @@
 require('coffee-script');
 
 var wd = require('wd'),
-  helper = require(__dirname + '/../wd40'),
+  Wd40 = require(__dirname + '/../wd40').wd40,
   should = require('chai').should();
 
-var browser = helper.browser,
-  wd40 = helper.wd40;
+var wd40 = new Wd40();
 
 var BASE_URL = process.env.BASE_URL || 'http://localhost:8080/wordpress/',
     WP_USER = process.env.WP_USER || 'admin',
@@ -18,7 +17,7 @@ describe('Publishing a liveblog update', function() {
   context("When I'm logged in as an admin", function() {
     before( function( done ) {
       wd40.init( function(err) {
-        browser.get(BASE_URL + '/wp-login.php', function(){
+        wd40.browser.get(BASE_URL + '/wp-login.php', function(){
           return done( err );
         });
       });
@@ -39,7 +38,7 @@ describe('Publishing a liveblog update', function() {
           random = String(Math.random());
 
       before( function( done ) {
-        browser.get(BASE_URL + '/?p=1', function( err ){
+        wd40.browser.get(BASE_URL + '/?p=1', function( err ){
           return done( err );
         });
       });
@@ -65,7 +64,7 @@ describe('Publishing a liveblog update', function() {
 
       before(function( done ) {
         setTimeout( function() {
-          browser.elementsByCssSelector( '.liveblog-entry', function( err, elements ) {
+          wd40.browser.elementsByCssSelector( '.liveblog-entry', function( err, elements ) {
             entry = elements[0];
             elements[0].getAttribute('id', function( err, _id ) {
               id = _id;
@@ -125,7 +124,7 @@ describe('Publishing a liveblog update', function() {
 
     context('when I delete an entry', function() {
       before(function( done ) {
-        browser.elementsByCssSelector( '.liveblog-entry', function( err, elements ) {
+        wd40.browser.elementsByCssSelector( '.liveblog-entry', function( err, elements ) {
           elements[0].getAttribute('id', function( err, _id ) {
             id = _id;
             done(err);
@@ -138,7 +137,7 @@ describe('Publishing a liveblog update', function() {
       });
 
       before(function( done ) {
-        browser.acceptAlert(done);
+        wd40.browser.acceptAlert(done);
       });
 
       it('gets removed from the page', function(done) {
