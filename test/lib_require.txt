@@ -1,4 +1,0 @@
-../js/spin.js
-../js/jquery.spin.js
-../js/plupload.js
-../js/moment.js

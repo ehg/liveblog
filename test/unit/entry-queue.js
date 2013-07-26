@@ -60,7 +60,7 @@ describe('Collection: EntriesQueue', function() {
 		});
 
 		before( function(done) {
-			liveblog.set_initial_timestamps();
+			queue.setInitialTimestamps();
 
 			this.clock.tick(1000);
 			serverTimestamp = liveblog.latest_response_server_timestamp;
@@ -71,9 +71,10 @@ describe('Collection: EntriesQueue', function() {
 					done();
 				},
 				error: function(a,b,c) {
-					done();
+					done(a);
 				}
 			});
+			this.clock.tick(10);
 			fakeServer.respond();
 		});
 

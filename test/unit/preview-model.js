@@ -24,7 +24,6 @@ describe('Model: PreviewEntry', function() {
 		});
 
 		it('sends the correct POST request to the server', function() {
-      console.log(ajaxStub.args[0]);
 			var correctArgs = ajaxStub.calledWithMatch({
 				type: 'POST',
 				data: sinon.match('entry_content=foo')

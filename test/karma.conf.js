@@ -16,16 +16,19 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
+     {pattern: 'node_modules/chai/chai.js', watched: false, included: true},
+     {pattern: 'node_modules/sinon/pkg/sinon.js', watched: false, included: true },
      {pattern: WP_BASE_URL + '/wp-includes/js/jquery/jquery.js', include: true},
      {pattern: WP_BASE_URL + '/wp-includes/js/underscore.min.js', include: true},
      {pattern: WP_BASE_URL + '/wp-includes/js/backbone.min.js', include: true},
-     {pattern: 'bundle/lib.js', included: true},
+     {pattern: '../js/spin.js', included: true},
+     {pattern: '../js/jquery.spin.js', included: true},
+     {pattern: '../js/plupload.js', included: true},
+     {pattern: '../js/moment.js', included: true},
      {pattern: 'fixtures.html', included: true},
      {pattern: 'fixtures.js', included: true},
-     {pattern: '../js/*.js', included: false},
-     {pattern: 'bundle/app.js', included: true},
-     {pattern: 'node_modules/chai/chai.js', watched: false, included: true},
-     {pattern: 'node_modules/sinon/pkg/sinon.js', watched: false, included: true },
+     {pattern: '../js/liveblog.js', included: true},
+     {pattern: '../js/liveblog-publisher.js', included: true},
      {pattern: 'unit/*.js', included: true}
     ],
 

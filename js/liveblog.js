@@ -257,9 +257,11 @@ window.liveblog = window.liveblog || {};
 			this.reset([]);
 		},
 
-		fetch: function() {
+		fetch: function(options) {
 			liveblog.show_spinner();
-			liveblog.EntriesQueue.__super__.fetch.call(this, {error: this.onFetchError});
+			options = options || {};
+			options.error = this.onFetchError;
+			liveblog.EntriesQueue.__super__.fetch.call(this, options);
 		},
 
 		onFetchError: function(collection, response, options) {

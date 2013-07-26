@@ -35,6 +35,9 @@ window.wp = {Uploader: function(){}};
 $('head').append(__html__['fixtures.html']);
 
 window.momentLang = {};
+window.liveblog = {};
+window.liveblog.$entry_container = $( '<span>' );
+window.liveblog.$spinner         = $( '<span>' );
 
 window.entryQueueResponse = {
 	"entries":	[
