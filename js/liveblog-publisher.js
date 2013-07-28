@@ -118,7 +118,8 @@
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.queue.resetTimer();
-			liveblog.entriesContainer.updateEntries(model);
+			var publishedEntry = new liveblog.PublishedEntry(model.attributes);
+			liveblog.entriesContainer.updateEntries(publishedEntry);
 		},
 		error: function(model, xhr, options) {
 			liveblog.fixedError.show(xhr);

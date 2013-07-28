@@ -4,35 +4,103 @@ window.liveblog = window.liveblog || {};
 ( function( $ ) {
 	Backbone.emulateHTTP = true;
 
-	liveblog.EntriesView = Backbone.View.extend({
-		el: '#liveblog-container',
+	liveblog.EntryView = Backbone.View.extend({
+
 		events: {
 			'click .liveblog-entry-edit': 'editClick',
 			'click .liveblog-entry-delete': 'deleteClick'
 		},
 
 		initialize: function() {
-			_.bindAll(this, 'deleteError');
+			_.bindAll(this, 'render', 'deleteError');
+			this.model.on('destroy', this.delete, this);
+		},
+		render: function() {
+			$entry = $(this.model.get('html'));
+			if (this.options.new === true || $('#' + $entry.attr('id')).length) {
+				this.options.new = false;
+				this.setElement($entry);
+			}
+			else
+			{
+				this.$el.html($entry.html());
+				this.delegateEvents();
+			}
+			return this;
+		},
+
+		delete: function() {
+			this.remove();
+		},
+
+		editClick: function(event) {
+			var form = new liveblog.EditEntryView({model: this.model, entry: this.$el});
+			form.render();
+			this.$el.find( '.liveblog-entry-edit' ).hide();
+			this.$el.find('.liveblog-entry-actions .liveblog-entry-delete').hide();
+		},
+
+		deleteClick: function(event) {
+			event.preventDefault();
+			//if ( !confirm( liveblog_settings.delete_confirmation ) ) {
+			//	return;
+			//}
+			this.model.set('type', 'delete');
+			liveblog.queue.add(this.model);
+			this.model.destroy({wait: true, error: this.deleteError});
+		},
+
+		deleteError: function(model, response, options) {
+			liveblog.fixedError.show(response);
+		}
+	});
+
+	liveblog.EntriesView = Backbone.View.extend({
+		el: '#liveblog-container',
+		views: {},
+
+		initialize: function() {
 			liveblog.queue.on('reset', function(){
 				this.updateEntries();
 			}, this);
-			liveblog.queue.on('destroy', this.deleteEntry, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 
 			liveblog.queue.on('stoppedPolling', function() {
 				// TODO: i18n
 				liveblog.fixedError.show("Oh no. Something's gone wrong, and we've stopped updating the live blog, please try and refresh!", true);
 			});
-		},
 
+			this.attachEntries();
+		},
+		attachEntries: function() {
+			_.each($('.liveblog-entry'), function(entry) {
+				$entry = $(entry);
+				var id = $entry.attr('id').replace('liveblog-entry-', '');
+				var model = new liveblog.PublishedEntry({id: id, html: $entry.html()});
+				var view = new liveblog.EntryView({el: $entry, model: model});
+				this.views[id] = view;
+			}, this);
+		},
 		updateEntries: function(entry) {
 			var updating, deleting;
 
 			if ( liveblog.is_at_the_top() && entry) {
-				this.addEntry(entry);
+				var view = new liveblog.EntryView({model: entry, new: true});
+				liveblog.$entry_container.prepend(view.render().$el)
+					.animate({backgroundColor: 'white'},
+								 {duration: this.animationDuration});
+				this.views[entry.id] = view;
 			} else {
-				liveblog.queue.updated().each(this.updateEntry, this);
-				liveblog.queue.deleted().each(this.deleteEntry, this);
+				liveblog.queue.updated().each(function(entry) {
+					var $entry = $(entry.get('html'));
+					var $oldEl = this.views[entry.id].$el;
+					this.views[entry.id].model = entry;
+					var blah = this.views[entry.id].render();
+
+				}, this);
+				liveblog.queue.deleted().each(function(entry) {
+					this.views[entry.id].delete();
+				}, this);
 			}
 
 			this.updateTimes();
@@ -42,34 +110,16 @@ window.liveblog = window.liveblog || {};
 		},
 
 		addEntries: function() {
-			liveblog.queue.each(this.addEntry, this);
-		},
-
-
-		addEntry: function( new_entry ) {
-			var $existingEntry = $('#liveblog-entry-' + new_entry.id),
-					animationDuration = liveblog.queue.length * 1000
+			var animationDuration = liveblog.queue.length * 1000
 																* liveblog_settings.fade_out_duration;
 
-			if (0 >= $existingEntry.length) {
-				var $new_entry = $( new_entry.get('html') );
-				$new_entry.addClass('highlight')
-					.prependTo( liveblog.$entry_container )
+			liveblog.queue.each(function(entry) {
+				var view = new EntryView({el: $entry, model: model});
+				liveblog.$entry_container.prepend(view.render().$el)
 					.animate({backgroundColor: 'white'},
-									 {duration: this.animationDuration});
-			}
+								 {duration: this.animationDuration});
+			}, this);
 		},
-
-		deleteEntry: function( entry ) {
-			var $existingEntry = $('#liveblog-entry-' + entry.id);
-			$existingEntry.remove();
-		},
-
-		updateEntry: function( entry ) {
-			var $existingEntry = $('#liveblog-entry-' + entry.id);
-			$existingEntry.replaceWith(entry.get('html'));
-		},
-
 		scrollToTop: function() {
 			$(window).scrollTop(this.$el.offset().top);
 		},
@@ -80,7 +130,7 @@ window.liveblog = window.liveblog || {};
 		},
 		updateTimes: function() {
 			var self = this;
-			this.$('.liveblog-entry').each(function() {
+			this.$el.find('.liveblog-entry').each(function() {
 				var $entry = $(this),
 					timestamp = $entry.data('timestamp'),
 					human = self.formatTimestamp(timestamp);
@@ -89,37 +139,6 @@ window.liveblog = window.liveblog || {};
 		},
 		formatTimestamp: function(timestamp) {
 			return moment.unix(timestamp).fromNow();
-		},
-
-		editClick: function(event) {
-			var entry = $( event.target ).closest( '.liveblog-entry' ),
-			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
-			model = new liveblog.PublishedEntry();
-			model.id = id;
-			var form = new liveblog.EditEntryView({model: model, entry: entry});
-			if ( !id ) {
-				return;
-			}
-			form.render();
-			entry.find( '.liveblog-entry-edit' ).hide();
-			entry.find('.liveblog-entry-actions .liveblog-entry-delete').hide();
-		},
-
-		deleteClick: function(event) {
-			event.preventDefault();
-			if ( !confirm( liveblog_settings.delete_confirmation ) ) {
-				return;
-			}
-
-			var entry = $( event.target ).closest( '.liveblog-entry' ),
-			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
-			model = new liveblog.PublishedEntry({id: id, type: 'delete'});
-			liveblog.queue.add(model);
-			model.destroy({wait: true, error: this.deleteError});
-		},
-
-		deleteError: function(model, response, options) {
-			liveblog.fixedError.show(response);
 		}
 	});
 
@@ -182,6 +201,7 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.PublishedEntry = liveblog.Entry.extend({
 		sync: function(method, model, options) {
+			delete model.attributes.html;
 			model.attributes = _.extend(model.attributes, {
 				'entry_id': model.id,
 				'type': method // TODO: is this necessary?
