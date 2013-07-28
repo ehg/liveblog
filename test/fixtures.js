@@ -7,7 +7,7 @@ window.liveblog_settings = {
 				'key'                    : 'somekey',
 				'nonce_key'              : 'noncekey',
 				'nonce'                  : 'nonce',
-				'latest_entry_timestamp' : '137449688',
+				'latest_entry_timestamp' : '1374496880',
 				'refresh_interval'       : '1',
 				'max_consecutive_retries': '2',
 				'delay_threshold'        : '1',
