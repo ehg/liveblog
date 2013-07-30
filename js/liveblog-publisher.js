@@ -118,7 +118,7 @@
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.queue.resetTimer();
-			liveblog.entriesContainer.updateEntries(model);
+			liveblog.entriesContainer.addEntry(model);
 		},
 		error: function(model, xhr, options) {
 			liveblog.fixedError.show(xhr);
