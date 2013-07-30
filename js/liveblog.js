@@ -220,7 +220,8 @@ window.liveblog = window.liveblog || {};
 		},
 
 		parse: function(response, options) {
-			var timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
+			var i,
+				timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
 		  liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
 			liveblog.latest_response_local_timestamp  = this.currentTimestamp();
 
@@ -228,6 +229,16 @@ window.liveblog = window.liveblog || {};
 				liveblog.latest_entry_timestamp = response.latest_timestamp;
 			}
 
+			for ( i = 0; i < response.entries.length; i++ )
+			{
+				var entryType = response.entries[i].type;
+						isThere = $('#liveblog-entry-' + response.entries[i].id).length;
+
+				if ('new' === entryType  && isThere)
+				{
+					response.entries.splice(i, 1);
+				}
+			}
 			return response.entries;
 		},
 		updated: function() {
