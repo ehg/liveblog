@@ -355,6 +355,7 @@ window.liveblog = window.liveblog || {};
 			e.preventDefault();
 			liveblog.entriesContainer.addEntries();
 			liveblog.queue.flush();
+			liveblog.entriesContainer.scrollToTop();
 		},
 		updateNumber: function(number) {
 			var template = number === 1? liveblog_settings.new_update : liveblog_settings.new_updates,
