@@ -16,6 +16,8 @@ window.liveblog = window.liveblog || {};
 
 			liveblog.queue.on('reset', function(){
 				this.updateEntries();
+				// TODO: are 3rd parties dependent on this? Or can we fire it on the Backbone event bus?
+				$( document.body ).trigger( 'post-load' );
 			}, this);
 
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
