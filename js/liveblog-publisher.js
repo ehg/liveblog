@@ -180,8 +180,7 @@
 		success: function(model, response, options) {
 			this.hide_spinner();
 			this.remove();
-			liveblog.queue.add(model);
-			liveblog.entriesContainer.updateEntries();
+			liveblog.entriesContainer.updateEntry(model);
 		}
 	});
 
