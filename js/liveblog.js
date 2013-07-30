@@ -12,11 +12,12 @@ window.liveblog = window.liveblog || {};
 		},
 
 		initialize: function() {
-			_.bindAll(this, 'deleteError');
+			_.bindAll(this, 'deleteError', 'deleteEntry');
+
 			liveblog.queue.on('reset', function(){
 				this.updateEntries();
 			}, this);
-			liveblog.queue.on('destroy', this.deleteEntry, this);
+
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 
 			liveblog.queue.on('stoppedPolling', function() {
@@ -114,8 +115,11 @@ window.liveblog = window.liveblog || {};
 			var entry = $( event.target ).closest( '.liveblog-entry' ),
 			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
 			model = new liveblog.PublishedEntry({id: id, type: 'delete'});
-			liveblog.queue.add(model);
-			model.destroy({wait: true, error: this.deleteError});
+			model.destroy({
+				wait: true,
+				error: this.deleteError,
+				success: this.deleteEntry
+			});
 		},
 
 		deleteError: function(model, response, options) {
