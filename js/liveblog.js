@@ -42,7 +42,7 @@ window.liveblog = window.liveblog || {};
 		},
 
 		addEntries: function() {
-			liveblog.queue.each(this.addEntry, this);
+			liveblog.queue.inserted().each(this.addEntry, this);
 		},
 
 
