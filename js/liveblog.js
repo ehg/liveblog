@@ -16,6 +16,7 @@ window.liveblog = window.liveblog || {};
 
 			liveblog.queue.on('reset', function(){
 				this.updateEntries();
+				liveblog.hide_spinner();
 				// TODO: are 3rd parties dependent on this? Or can we fire it on the Backbone event bus?
 				$( document.body ).trigger( 'post-load' );
 			}, this);
@@ -211,7 +212,6 @@ window.liveblog = window.liveblog || {};
 				this.consecutiveFailuresCount = 0;
 				this.undelayTimer();
 				this.resetTimer();
-				liveblog.hide_spinner();
 			}, this);
 
 		},
