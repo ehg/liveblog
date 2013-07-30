@@ -335,8 +335,9 @@ window.liveblog = window.liveblog || {};
 			liveblog.queue.on('reset', this.render, this);
 		},
 		render: function() {
-			var entries_in_queue = liveblog.queue.length;
-			if ( entries_in_queue ) {
+			var entries_in_queue = liveblog.queue.inserted().length;
+
+			if ( entries_in_queue && !liveblog.is_at_the_top() ) {
 				this.show();
 				this.updateNumber(liveblog.queue.length);
 			} else {
@@ -370,11 +371,11 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.TitleBarCountView = Backbone.View.extend({
 		initialize: function() {
-			liveblog.queue.on('all', this.render, this);
+			liveblog.queue.on('reset', this.render, this);
 			this.originalTitle = document.title;
 		},
 		render: function() {
-			var entries_in_queue = liveblog.queue.length,
+			var entries_in_queue = liveblog.queue.inserted().length;
 				count_string = entries_in_queue? '(' + entries_in_queue + ') ' : '';
 			document.title = count_string + this.originalTitle;
 		}
