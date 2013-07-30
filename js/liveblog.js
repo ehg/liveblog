@@ -29,26 +29,16 @@ window.liveblog = window.liveblog || {};
 			});
 		},
 
-		updateEntries: function(entry) {
-			var updating, deleting;
-
-			if ( liveblog.is_at_the_top() && entry) {
-				this.addEntry(entry);
-			} else {
-				liveblog.queue.updated().each(this.updateEntry, this);
-				liveblog.queue.deleted().each(this.deleteEntry, this);
-			}
-
-			this.updateTimes();
-			liveblog.queue.resetTimer();
-			liveblog.queue.undelayTimer();
-			$( document.body ).trigger( 'post-load' ); // waht does this do?
+		updateEntries: function() {
+			this.addEntries();
+			liveblog.queue.updated().each(this.updateEntry, this);
+			liveblog.queue.deleted().each(this.deleteEntry, this);
+			this.updateTimes(); // TODO: factor into EntryView
 		},
 
 		addEntries: function() {
 			liveblog.queue.inserted().each(this.addEntry, this);
 		},
-
 
 		addEntry: function( new_entry ) {
 			var $existingEntry = $('#liveblog-entry-' + new_entry.id),
@@ -62,16 +52,19 @@ window.liveblog = window.liveblog || {};
 					.animate({backgroundColor: 'white'},
 									 {duration: this.animationDuration});
 			}
+			this.updateTimes(); // TODO: factor into EntryView
 		},
 
 		deleteEntry: function( entry ) {
 			var $existingEntry = $('#liveblog-entry-' + entry.id);
 			$existingEntry.remove();
+			this.updateTimes(); // TODO: factor into EntryView
 		},
 
 		updateEntry: function( entry ) {
 			var $existingEntry = $('#liveblog-entry-' + entry.id);
 			$existingEntry.replaceWith(entry.get('html'));
+			this.updateTimes(); // TODO: factor into EntryView
 		},
 
 		scrollToTop: function() {
