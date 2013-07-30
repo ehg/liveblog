@@ -212,7 +212,7 @@ window.liveblog = window.liveblog || {};
 
 		url: function() {
 			var url  = liveblog_settings.endpoint_url,
-				from = liveblog.latest_entry_timestamp + 1,
+				from = parseInt(liveblog.latest_entry_timestamp, 10) + 1,
 				local_diff = this.currentTimestamp() - liveblog.latest_response_local_timestamp,
 				to         = liveblog.latest_response_server_timestamp + local_diff;
 
