@@ -50,7 +50,7 @@ window.liveblog = window.liveblog || {};
 				$new_entry.addClass('highlight')
 					.prependTo( liveblog.$entry_container )
 					.animate({backgroundColor: 'white'},
-									 {duration: this.animationDuration});
+									 {duration: animationDuration});
 			}
 			this.updateTimes(); // TODO: factor into EntryView
 		},
