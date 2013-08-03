@@ -270,6 +270,12 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			});
 			return new Backbone.Collection(filtered);
 		},
+		modified: function() {
+			var filtered = this.filter(function(entry) {
+				return 'update' === entry.get('type') || 'new' === entry.get('type');
+			});
+			return new Backbone.Collection(filtered);
+		},
 		deleted: function() {
 			var filtered = this.filter(function(entry) {
 				return 'delete' === entry.get('type');
@@ -358,10 +364,11 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			liveblog.queue.on('sync', this.render, this);
 		},
 		render: function() {
-			var entries_in_queue = liveblog.queue.length;
-			if ( entries_in_queue ) {
+			var entries_in_queue = liveblog.queue.modified().length;
+
+			if ( entries_in_queue && !liveblog.entriesContainer.isAtTheTop() ) {
 				this.show();
-				this.updateNumber(liveblog.queue.length);
+				this.updateNumber(entries_in_queue);
 			} else {
 				this.hide();
 			}
@@ -375,8 +382,13 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		},
 		flush: function(e) {
 			e.preventDefault();
-			liveblog.entriesContainer.addEntries();
+			liveblog.queue.modified().each(function(entry) {
+				if (!liveblog.entries.get(entry.id)) {
+					liveblog.entries.add(entry);
+				}
+			});
 			liveblog.queue.flush();
+			liveblog.entriesContainer.scrollToTop();
 		},
 		updateNumber: function(number) {
 			var template = number === 1? liveblog_settings.new_update : liveblog_settings.new_updates,
@@ -397,7 +409,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			this.originalTitle = document.title;
 		},
 		render: function() {
-			var entries_in_queue = liveblog.queue.length,
+			var entries_in_queue = liveblog.queue.modified().length,
 				count_string = entries_in_queue? '(' + entries_in_queue + ') ' : '';
 			document.title = count_string + this.originalTitle;
 		}
