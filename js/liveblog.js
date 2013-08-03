@@ -112,8 +112,8 @@ window.liveblog = window.liveblog || {};
 			$(window).scrollTop(this.$el.offset().top);
 		},
 		flushQueueWhenOnTop: function() {
-			if (liveblog.is_at_the_top()) {
-				liveblog.queue.flush();
+			if (this.isAtTheTop()) {
+				liveblog.queue.fetch();
 			}
 		},
 		startHumanDiffTimer: function() {
