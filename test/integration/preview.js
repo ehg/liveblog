@@ -8,9 +8,9 @@ var wd = require('wd'),
 
 var wd40 = new Wd40();
 
-var BASE_URL = process.env.BASE_URL || 'http://localhost:8080/wordpress/',
+var BASE_URL = process.env.BASE_URL || 'http://local.wordpress.dev',
     WP_USER = process.env.WP_USER || 'admin',
-    WP_PASS = process.env.WP_PASS || 'vagrant',
+    WP_PASS = process.env.WP_PASS || 'password',
     WP_POST_ID = process.env.WP_POST_ID || '1';
 
 describe('Previewing an entry', function() {

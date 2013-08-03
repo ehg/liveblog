@@ -7,9 +7,9 @@ var wd = require('wd'),
   should = require('chai').should();
 
 
-var BASE_URL = process.env.BASE_URL || 'http://localhost:8080/wordpress/',
+var BASE_URL = process.env.BASE_URL || 'http://local.wordpress.dev',
     WP_USER = process.env.WP_USER || 'admin',
-    WP_PASS = process.env.WP_PASS || 'vagrant',
+    WP_PASS = process.env.WP_PASS || 'password',
     WP_POST_ID = process.env.WP_POST_ID || '1';
 
 var launchAndLogin = function(done) {
@@ -59,6 +59,10 @@ describe('Actions between browsers', function() {
           return done( err );
         });
       });
+    });
+
+    before(function(done) {
+      rcvWd40.browser.eval("jQuery(window).scrollTop(jQuery(document).height());", done)
     });
 
     it('shows a nag view in the receiving browser', function( done ) {
