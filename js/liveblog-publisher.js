@@ -1,4 +1,4 @@
-/* global liveblog, liveblog_settings, liveblog_publisher_settings, _, confirm, jQuery, Backbone */
+/* global liveblog, liveblog_settings, liveblog_publisher_settings, _, jQuery, Backbone */
 ( function( $ ) {
 	if ( typeof( liveblog ) === 'undefined' ) {
 		return;
@@ -46,8 +46,7 @@
 		},
 		submit: function(e) {
 			e.preventDefault();
-			var new_entry_content = this.$textarea.val(),
-			entry = new liveblog.NewEntry();
+			var new_entry_content = this.$textarea.val();
 
 			if ( ! new_entry_content ) {
 				return;
@@ -56,12 +55,14 @@
 			this.disable();
 			this.show_spinner();
 
-			entry.save({
+			this.model = new liveblog.Entry();
+			this.model.on('sync', this.success, this);
+			this.model.on('error', this.error, this);
+
+			this.model.save({
 				content: new_entry_content
 			});
 
-			entry.on('sync', this.success, this);
-			entry.on('error', this.error, this);
 		},
 		entry_keyhandler: function(e) {
 			var cmd_ctrl_key = (e.metaKey && !e.ctrlKey) || e.ctrlKey;
@@ -113,14 +114,14 @@
 		get_id_for_ajax_request: function() {
 			return null;
 		},
-		success: function(model, response, options) {
+		success: function() {
 			this.enable();
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.queue.resetTimer();
-			liveblog.entriesContainer.addEntry(model);
+			liveblog.entries.add(this.model);
 		},
-		error: function(model, xhr, options) {
+		error: function(model, xhr) {
 			liveblog.fixedError.show(xhr);
 			this.enable();
 			this.hide_spinner();
@@ -145,6 +146,8 @@
 		initialize: function(options) {
 			this.$entry = options.entry;
 			this.$entry_text = this.$entry.find('.liveblog-entry-text');
+			this.model.on('sync', this.success, this);
+			this.model.on('error', this.error, this);
 		},
 		get_content_for_form: function() {
 			return this.$entry_text.data('original-content');
@@ -173,14 +176,15 @@
 				content: new_entry_content
 			});
 
-			this.model.on('sync', this.success, this);
-			this.model.on('error', this.error, this);
 		},
-
-		success: function(model, response, options) {
-			this.hide_spinner();
-			this.remove();
-			liveblog.entriesContainer.updateEntry(model);
+		success: function(model) {
+			var entry = liveblog.entries.get(model.id);
+			if (entry) {
+				this.hide_spinner();
+				entry.set('html', model.get('html'));
+				entry.trigger('change:html'); //TODO: why do we have to manually fire this?
+				this.remove();
+			}
 		}
 	});
 
@@ -200,12 +204,12 @@
 			this.model.on('error', this.error, this);
 			this.model.save();
 		},
-		success: function(model, response, options) {
+		success: function(model) {
 			this.form.enable();
 			this.$el.html( '<div class="liveblog-entry"><div class="liveblog-entry-text">' + model.get('html') + '</div></div>' );
 			$( document.body ).trigger( 'post-load' );
 		},
-		error: function(model, xhr, options) {
+		error: function(model, xhr) {
 			liveblog.fixedError.show(xhr);
 			this.form.enable();
 			this.form.switch_to_entry();

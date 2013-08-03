@@ -1,105 +1,43 @@
-/* global liveblog, liveblog_settings, _, alert, jQuery, moment, momentLang, Backbone */
+/* global liveblog, liveblog_settings, _, confirm, jQuery, moment, momentLang, Backbone */
 window.liveblog = window.liveblog || {};
 
 ( function( $ ) {
 	Backbone.emulateHTTP = true;
 
-	liveblog.EntriesView = Backbone.View.extend({
-		el: '#liveblog-container',
+	liveblog.EntryView = Backbone.View.extend({
+
 		events: {
 			'click .liveblog-entry-edit': 'editClick',
 			'click .liveblog-entry-delete': 'deleteClick'
 		},
 
 		initialize: function() {
-			_.bindAll(this, 'deleteError', 'deleteEntry');
-
-			liveblog.queue.on('reset', function(){
-				this.updateEntries();
-				liveblog.hide_spinner();
-				// TODO: are 3rd parties dependent on this? Or can we fire it on the Backbone event bus?
-				$( document.body ).trigger( 'post-load' );
-			}, this);
-
-			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
-
-			liveblog.queue.on('stoppedPolling', function() {
-				// TODO: i18n
-				liveblog.fixedError.show("Oh no. Something's gone wrong, and we've stopped updating the live blog, please try and refresh!", true);
-			});
+			_.bindAll(this, 'update', 'render', 'delete', 'deleteClick', 'editClick');
+				this.model.on('destroy', this.delete, this);
+				this.model.on('change:html', this.update, this);
+				this.model.on('updateTime', this.updateTime, this);
+			},
+		render: function() {
+			var $entry = $(this.model.get('html'));
+			this.setElement($entry);
+			this.updateTime();
+			return this;
+		},
+		update: function() {
+			var $entry = $(this.model.get('html'));
+			this.$el.replaceWith($entry);
+			this.setElement($entry);
+			this.updateTime();
+		},
+		delete: function() {
+			this.remove();
 		},
 
-		updateEntries: function() {
-			this.addEntries();
-			liveblog.queue.updated().each(this.updateEntry, this);
-			liveblog.queue.deleted().each(this.deleteEntry, this);
-			this.updateTimes(); // TODO: factor into EntryView
-		},
-
-		addEntries: function() {
-			liveblog.queue.inserted().each(this.addEntry, this);
-		},
-
-		addEntry: function( new_entry ) {
-			var $existingEntry = $('#liveblog-entry-' + new_entry.id),
-					animationDuration = liveblog.queue.length * 1000
-																* liveblog_settings.fade_out_duration;
-
-			if (0 >= $existingEntry.length) {
-				var $new_entry = $( new_entry.get('html') );
-				$new_entry.addClass('highlight')
-					.prependTo( liveblog.$entry_container )
-					.animate({backgroundColor: 'white'},
-									 {duration: this.animationDuration});
-			}
-			this.updateTimes(); // TODO: factor into EntryView
-		},
-
-		deleteEntry: function( entry ) {
-			var $existingEntry = $('#liveblog-entry-' + entry.id);
-			$existingEntry.remove();
-			this.updateTimes(); // TODO: factor into EntryView
-		},
-
-		updateEntry: function( entry ) {
-			var $existingEntry = $('#liveblog-entry-' + entry.id);
-			$existingEntry.replaceWith(entry.get('html'));
-			this.updateTimes(); // TODO: factor into EntryView
-		},
-
-		scrollToTop: function() {
-			$(window).scrollTop(this.$el.offset().top);
-		},
-		flushQueueWhenOnTop: function() {
-			if (liveblog.is_at_the_top()) {
-				liveblog.queue.flush();
-			}
-		},
-		updateTimes: function() {
-			var self = this;
-			this.$('.liveblog-entry').each(function() {
-				var $entry = $(this),
-					timestamp = $entry.data('timestamp'),
-					human = self.formatTimestamp(timestamp);
-				$('.liveblog-meta-time a', $entry).text(human);
-			});
-		},
-		formatTimestamp: function(timestamp) {
-			return moment.unix(timestamp).fromNow();
-		},
-
-		editClick: function(event) {
-			var entry = $( event.target ).closest( '.liveblog-entry' ),
-			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
-			model = new liveblog.PublishedEntry();
-			model.id = id;
-			var form = new liveblog.EditEntryView({model: model, entry: entry});
-			if ( !id ) {
-				return;
-			}
+		editClick: function() {
+			var form = new liveblog.EditEntryView({model: this.model, entry: this.$el});
 			form.render();
-			entry.find( '.liveblog-entry-edit' ).hide();
-			entry.find('.liveblog-entry-actions .liveblog-entry-delete').hide();
+			this.$el.find( '.liveblog-entry-edit' ).hide();
+			this.$el.find('.liveblog-entry-actions .liveblog-entry-delete').hide();
 		},
 
 		deleteClick: function(event) {
@@ -107,19 +45,86 @@ window.liveblog = window.liveblog || {};
 			if ( !confirm( liveblog_settings.delete_confirmation ) ) {
 				return;
 			}
-
-			var entry = $( event.target ).closest( '.liveblog-entry' ),
-			id = entry.attr( 'id' ).replace( 'liveblog-entry-', '' ),
-			model = new liveblog.PublishedEntry({id: id, type: 'delete'});
-			model.destroy({
-				wait: true,
-				error: this.deleteError,
-				success: this.deleteEntry
-			});
+			this.model.set('type', 'delete');
+			this.model.destroy({wait: true, error: this.deleteError});
 		},
 
-		deleteError: function(model, response, options) {
+		deleteError: function(model, response) {
 			liveblog.fixedError.show(response);
+		},
+		updateTime: function() {
+			var timestamp = this.$el.data('timestamp'),
+					human = this.formatTimestamp(timestamp);
+				$('.liveblog-meta-time a', this.$el).text(human);
+		},
+		formatTimestamp: function(timestamp) {
+			return moment.unix(timestamp).fromNow();
+		}
+	});
+
+	liveblog.EntriesView = Backbone.View.extend({
+		el: '#liveblog-container',
+
+		initialize: function() {
+			_.bindAll(this, 'flushQueueWhenOnTop');
+			this.attachEntries();
+
+			liveblog.entries.on('add', this.addEntry, this);
+			liveblog.queue.on('sync', function(){
+				liveblog.hide_spinner();
+				// TODO: are 3rd parties dependent on this? Or can we fire it on the Backbone event bus?
+				$( document.body ).trigger( 'post-load' );
+			}, this);
+			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
+
+			liveblog.queue.on('stoppedPolling', function() {
+				// TODO: i18n
+				liveblog.fixedError.show("Oh no. Something's gone wrong, and we've stopped updating the live blog, please try and refresh!", true);
+			});
+
+		},
+
+		attachEntries: function() {
+			var $entries = $('.liveblog-entry');
+			_.each($entries, function(entry) {
+				var $entry = $(entry),
+					id = $entry.attr('id').replace('liveblog-entry-', ''),
+					model = new liveblog.Entry({id: id, html: $entry.html()});
+				new liveblog.EntryView({model: model, el: $entry});
+				liveblog.entries.add(model, {silent: true});
+			}, this);
+		},
+		addEntry: function(entry) {
+			var animationDuration = (liveblog.queue.length + 1) * 1000 *
+																liveblog_settings.fade_out_duration,
+
+				view = new liveblog.EntryView({model: entry}),
+				$entry = view.render().$el;
+
+			$entry.prependTo(liveblog.$entry_container)
+				.addClass('highlight')
+				.animate({backgroundColor: 'white'},
+								 {duration: animationDuration});
+		},
+		scrollToTop: function() {
+			$(window).scrollTop(this.$el.offset().top);
+		},
+		flushQueueWhenOnTop: function() {
+			if (this.isAtTheTop()) {
+				liveblog.queue.fetch();
+			}
+		},
+		startHumanDiffTimer: function() {
+			var tick = function(){
+				liveblog.entries.each(function(entry){
+					entry.trigger('updateTime');
+				});
+			};
+			tick();
+			setInterval(tick, 60 * 1000);
+		},
+		isAtTheTop: function() {
+			return $(document).scrollTop()  < this.$el.offset().top;
 		}
 	});
 
@@ -134,6 +139,40 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
+	liveblog.EntriesCollection = Backbone.Collection.extend({
+		model: liveblog.Entry,
+
+		initialize: function() {
+			var queue = liveblog.queue;
+			queue.on('sync', function() {
+				queue.inserted().each(function(entry) {
+					if (liveblog.entriesContainer.isAtTheTop() ){
+						this.add(entry);
+						queue.remove(entry);
+					}
+				}, this);
+				queue.updated().each(function(entry) {
+					var existingEntry = this.get(entry.id);
+					if (existingEntry) {
+						existingEntry.set('html', entry.get('html'));
+						existingEntry.trigger('change:html');
+						queue.remove(entry);
+					}
+				}, this);
+
+				queue.deleted().each(function(entry) {
+					var model = this.get(entry.id);
+					if (model) {
+						model.trigger('destroy');
+						this.remove(model);
+					}
+					queue.remove(entry);
+				}, this);
+			}, this);
+
+		},
+	});
+
 	liveblog.Entry = Backbone.Model.extend({
 		url: liveblog_settings.endpoint_url + 'crud',
 
@@ -142,19 +181,24 @@ window.liveblog = window.liveblog || {};
 				'create': 'insert',
 				'update': 'update',
 				'delete': 'delete'
-			};
-
-			var data = _.extend(model.attributes, {
+			},
+				data = _.extend(model.attributes, {
 				'crud_action': methodMap[method],
-				'post_id': liveblog_settings.post_id
-			});
+				'post_id': liveblog_settings.post_id,
+				'entry_id': model.id
+				});
+
+			if ( 'delete' === method )
+			{
+				delete data.html;
+			}
 
 			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
 			options.data = $.param(data);
 
 			return Backbone.sync.apply(this, [method, model, options]);
 		},
-		parse: function(response, options) {
+		parse: function(response) {
 			var parsed;
 
 			if (response.entries) {
@@ -166,34 +210,8 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
-	liveblog.NewEntry = liveblog.Entry.extend({
-		sync: function(method, model, options) {
-			model.attributes = _.extend(model.attributes, {
-				'type': 'new'
-			});
-
-			return liveblog.NewEntry.__super__.sync(method, model, options);
-		},
-
-		parse: function(response, options) {
-			return _.extend(this.attributes, response.entries[0]);
-		}
-	});
-
-	liveblog.PublishedEntry = liveblog.Entry.extend({
-		sync: function(method, model, options) {
-			model.attributes = _.extend(model.attributes, {
-				'entry_id': model.id,
-				'type': method // TODO: is this necessary?
-			});
-
-			return liveblog.PublishedEntry.__super__.sync(method, model, options);
-		}
-
-	});
-
-	liveblog.EntriesQueue = Backbone.Collection.extend({
-		model: liveblog.PublishedEntry,
+liveblog.EntriesQueue = Backbone.Collection.extend({
+		model: liveblog.Entry,
 		consecutiveFailuresCount: 0,
 
 		initialize: function() {
@@ -201,17 +219,16 @@ window.liveblog = window.liveblog || {};
 
 			this.setInitialTimestamps();
 			this.resetTimer();
-			this.on('reset', function() {
+			this.on('sync', function() {
 				this.consecutiveFailuresCount = 0;
 				this.undelayTimer();
 				this.resetTimer();
 			}, this);
-
 		},
 
 		url: function() {
 			var url  = liveblog_settings.endpoint_url,
-				from = parseInt(liveblog.latest_entry_timestamp, 10) + 1,
+				from = Number(liveblog.latest_entry_timestamp) + 1,
 				local_diff = this.currentTimestamp() - liveblog.latest_response_local_timestamp,
 				to         = liveblog.latest_response_server_timestamp + local_diff;
 
@@ -220,8 +237,9 @@ window.liveblog = window.liveblog || {};
 		},
 
 		parse: function(response, options) {
-			var i,
-				timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
+			var i, entryType, isThere,
+				xhr = options.xhr || options,
+				timestamp_milliseconds = Date.parse( xhr.getResponseHeader( 'Date' ) );
 		  liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
 			liveblog.latest_response_local_timestamp  = this.currentTimestamp();
 
@@ -231,10 +249,11 @@ window.liveblog = window.liveblog || {};
 
 			for ( i = 0; i < response.entries.length; i++ )
 			{
-				var entryType = response.entries[i].type;
-						isThere = $('#liveblog-entry-' + response.entries[i].id).length;
+				entryType = response.entries[i].type;
+				isThere = liveblog.entries.get(response.entries[i].id);
 
-				if ('new' === entryType  && isThere)
+				if (('new' === entryType && isThere) ||
+						('delete' === entryType && !isThere))
 				{
 					response.entries.splice(i, 1);
 				}
@@ -244,6 +263,12 @@ window.liveblog = window.liveblog || {};
 		updated: function() {
 			var filtered = this.filter(function(entry) {
 				return 'update' === entry.get('type');
+			});
+			return new Backbone.Collection(filtered);
+		},
+		modified: function() {
+			var filtered = this.filter(function(entry) {
+				return 'update' === entry.get('type') || 'new' === entry.get('type');
 			});
 			return new Backbone.Collection(filtered);
 		},
@@ -269,12 +294,12 @@ window.liveblog = window.liveblog || {};
 
 		fetch: function(options) {
 			liveblog.show_spinner();
-			options = options || {};
+			options = {update: true,  remove: false, reset: false};
 			options.error = this.onFetchError;
 			liveblog.EntriesQueue.__super__.fetch.call(this, options);
 		},
 
-		onFetchError: function(collection, response, options) {
+		onFetchError: function() {
 			liveblog.hide_spinner();
 
 			// Have a max number of checks, which causes the auto-update to shut off or slow down the auto-update
@@ -332,14 +357,14 @@ window.liveblog = window.liveblog || {};
 			'click a': 'flush'
 		},
 		initialize: function() {
-			liveblog.queue.on('reset', this.render, this);
+			liveblog.queue.on('sync', this.render, this);
 		},
 		render: function() {
-			var entries_in_queue = liveblog.queue.inserted().length;
+			var entries_in_queue = liveblog.queue.modified().length;
 
-			if ( entries_in_queue && !liveblog.is_at_the_top() ) {
+			if ( entries_in_queue && !liveblog.entriesContainer.isAtTheTop() ) {
 				this.show();
-				this.updateNumber(liveblog.queue.length);
+				this.updateNumber(entries_in_queue);
 			} else {
 				this.hide();
 			}
@@ -353,7 +378,11 @@ window.liveblog = window.liveblog || {};
 		},
 		flush: function(e) {
 			e.preventDefault();
-			liveblog.entriesContainer.addEntries();
+			liveblog.queue.modified().each(function(entry) {
+				if (!liveblog.entries.get(entry.id)) {
+					liveblog.entries.add(entry);
+				}
+			});
 			liveblog.queue.flush();
 			liveblog.entriesContainer.scrollToTop();
 		},
@@ -372,11 +401,11 @@ window.liveblog = window.liveblog || {};
 
 	liveblog.TitleBarCountView = Backbone.View.extend({
 		initialize: function() {
-			liveblog.queue.on('reset', this.render, this);
+			liveblog.queue.on('sync', this.render, this);
 			this.originalTitle = document.title;
 		},
 		render: function() {
-			var entries_in_queue = liveblog.queue.inserted().length;
+			var entries_in_queue = liveblog.queue.modified().length,
 				count_string = entries_in_queue? '(' + entries_in_queue + ') ' : '';
 			document.title = count_string + this.originalTitle;
 		}
@@ -429,6 +458,7 @@ window.liveblog = window.liveblog || {};
 		liveblog.$spinner         = $( '#liveblog-update-spinner' );
 
 		liveblog.queue = new liveblog.EntriesQueue();
+		liveblog.entries = new liveblog.EntriesCollection();
 		liveblog.fixedNag = new liveblog.FixedNagView();
 		liveblog.fixedError = new liveblog.FixedErrorView();
 		liveblog.entriesContainer = new liveblog.EntriesView();
@@ -438,8 +468,8 @@ window.liveblog = window.liveblog || {};
 		liveblog.init_moment_js();
 
 		liveblog.cast_settings_numbers();
-		liveblog.start_human_time_diff_timer();
 
+		liveblog.entriesContainer.startHumanDiffTimer();
 		Backbone.trigger( 'after-init' );
 	};
 
@@ -461,27 +491,12 @@ window.liveblog = window.liveblog || {};
 		liveblog_settings.fade_out_duration       = parseInt( liveblog_settings.fade_out_duration, 10 );
 	};
 
-
-	// Move to EntriesView
-	liveblog.start_human_time_diff_timer = function() {
-		var tick = function(){ liveblog.entriesContainer.updateTimes(); };
-		tick();
-		setInterval(tick, 60 * 1000);
-	};
-
-
-
 	liveblog.show_spinner = function() {
 		liveblog.$spinner.spin( 'small' );
 	};
 
 	liveblog.hide_spinner = function() {
 		liveblog.$spinner.spin( false );
-	};
-
-
-	liveblog.is_at_the_top = function() {
-		return $(document).scrollTop()  < liveblog.$entry_container.offset().top;
 	};
 
 	// Initialize everything!
