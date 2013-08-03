@@ -161,19 +161,24 @@ window.liveblog = window.liveblog || {};
 				'create': 'insert',
 				'update': 'update',
 				'delete': 'delete'
-			};
-
-			var data = _.extend(model.attributes, {
+			},
+				data = _.extend(model.attributes, {
 				'crud_action': methodMap[method],
-				'post_id': liveblog_settings.post_id
-			});
+				'post_id': liveblog_settings.post_id,
+				'entry_id': model.id
+				});
+
+			if ( 'delete' === method )
+			{
+				delete data.html;
+			}
 
 			data[liveblog_settings.nonce_key] = liveblog_settings.nonce;
 			options.data = $.param(data);
 
 			return Backbone.sync.apply(this, [method, model, options]);
 		},
-		parse: function(response, options) {
+		parse: function(response) {
 			var parsed;
 
 			if (response.entries) {
@@ -185,35 +190,8 @@ window.liveblog = window.liveblog || {};
 		}
 	});
 
-	liveblog.NewEntry = liveblog.Entry.extend({
-		sync: function(method, model, options) {
-			model.attributes = _.extend(model.attributes, {
-				'type': 'new'
-			});
-
-			return liveblog.NewEntry.__super__.sync(method, model, options);
-		},
-
-		parse: function(response, options) {
-			return _.extend(this.attributes, response.entries[0]);
-		}
-	});
-
-	liveblog.PublishedEntry = liveblog.Entry.extend({
-		sync: function(method, model, options) {
-			delete model.attributes.html;
-			model.attributes = _.extend(model.attributes, {
-				'entry_id': model.id,
-				'type': method // TODO: is this necessary?
-			});
-
-			return liveblog.PublishedEntry.__super__.sync(method, model, options);
-		}
-
-	});
-
-	liveblog.EntriesQueue = Backbone.Collection.extend({
-		model: liveblog.PublishedEntry,
+liveblog.EntriesQueue = Backbone.Collection.extend({
+		model: liveblog.Entry,
 		consecutiveFailuresCount: 0,
 
 		initialize: function() {

@@ -46,8 +46,7 @@
 		},
 		submit: function(e) {
 			e.preventDefault();
-			var new_entry_content = this.$textarea.val(),
-			entry = new liveblog.NewEntry();
+			var new_entry_content = this.$textarea.val();
 
 			if ( ! new_entry_content ) {
 				return;
@@ -56,12 +55,14 @@
 			this.disable();
 			this.show_spinner();
 
-			entry.save({
+			this.model = new liveblog.Entry();
+			this.model.on('sync', this.success, this);
+			this.model.on('error', this.error, this);
+
+			this.model.save({
 				content: new_entry_content
 			});
 
-			entry.on('sync', this.success, this);
-			entry.on('error', this.error, this);
 		},
 		entry_keyhandler: function(e) {
 			var cmd_ctrl_key = (e.metaKey && !e.ctrlKey) || e.ctrlKey;
