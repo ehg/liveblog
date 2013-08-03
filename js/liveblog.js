@@ -241,7 +241,9 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		},
 
 		parse: function(response, options) {
-			var timestamp_milliseconds = Date.parse( options.getResponseHeader( 'Date' ) );
+			var i, entryType, isThere,
+				xhr = options.xhr || options,
+				timestamp_milliseconds = Date.parse( xhr.getResponseHeader( 'Date' ) );
 		  liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
 			liveblog.latest_response_local_timestamp  = this.currentTimestamp();
 
