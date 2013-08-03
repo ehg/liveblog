@@ -8,7 +8,8 @@ class wd40
    options =
      browserName: process.env.BROWSER ? 'chrome'
    if options.browserName is 'chrome'
-     options['chrome.switches'] = ['--disable-extensions']
+     options.chromeOptions = {}
+     options.chromeOptions.args = ['--incognito']
 
    @browser.init options, (err) ->
      if err
