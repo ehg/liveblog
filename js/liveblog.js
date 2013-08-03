@@ -232,7 +232,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 
 		url: function() {
 			var url  = liveblog_settings.endpoint_url,
-				from = liveblog.latest_entry_timestamp + 1,
+				from = Number(liveblog.latest_entry_timestamp) + 1,
 				local_diff = this.currentTimestamp() - liveblog.latest_response_local_timestamp,
 				to         = liveblog.latest_response_server_timestamp + local_diff;
 
