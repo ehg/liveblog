@@ -12,23 +12,25 @@ window.liveblog = window.liveblog || {};
 		},
 
 		initialize: function() {
-			_.bindAll(this, 'render', 'deleteError');
+		_.bindAll(this, 'update', 'render', 'delete', 'deleteClick', 'editClick');
 			this.model.on('destroy', this.delete, this);
+			this.model.on('change:html', this.update, this);
+			this.model.on('updateTime', this.updateTime, this);
 		},
+
 		render: function() {
-			$entry = $(this.model.get('html'));
-			if (this.options.new === true || $('#' + $entry.attr('id')).length) {
-				this.options.new = false;
-				this.setElement($entry);
-			}
-			else
-			{
-				this.$el.html($entry.html());
-				this.delegateEvents();
-			}
+			var $entry = $(this.model.get('html'));
+			this.setElement($entry);
+			this.updateTime();
 			return this;
 		},
 
+		update: function() {
+			var $entry = $(this.model.get('html'));
+			this.$el.replaceWith($entry);
+			this.setElement($entry);
+			this.updateTime();
+		},
 		delete: function() {
 			this.remove();
 		},
@@ -85,52 +87,26 @@ window.liveblog = window.liveblog || {};
 			this.attachEntries();
 		},
 		attachEntries: function() {
-			_.each($('.liveblog-entry'), function(entry) {
-				$entry = $(entry);
-				var id = $entry.attr('id').replace('liveblog-entry-', '');
-				var model = new liveblog.PublishedEntry({id: id, html: $entry.html()});
-				var view = new liveblog.EntryView({el: $entry, model: model});
-				this.views[id] = view;
+			var $entries = $('.liveblog-entry');
+			_.each($entries, function(entry) {
+				var $entry = $(entry),
+					id = $entry.attr('id').replace('liveblog-entry-', ''),
+					model = new liveblog.Entry({id: id, html: $entry.html()});
+				new liveblog.EntryView({model: model, el: $entry});
+				liveblog.entries.add(model, {silent: true});
 			}, this);
 		},
-		updateEntries: function(entry) {
-			var updating, deleting;
+		addEntry: function(entry) {
+			var animationDuration = (liveblog.queue.length + 1) * 1000 *
+																liveblog_settings.fade_out_duration,
 
-			if ( liveblog.is_at_the_top() && entry) {
-				var view = new liveblog.EntryView({model: entry, new: true});
-				liveblog.$entry_container.prepend(view.render().$el)
-					.animate({backgroundColor: 'white'},
-								 {duration: this.animationDuration});
-				this.views[entry.id] = view;
-			} else {
-				liveblog.queue.updated().each(function(entry) {
-					var $entry = $(entry.get('html'));
-					var $oldEl = this.views[entry.id].$el;
-					this.views[entry.id].model = entry;
-					var blah = this.views[entry.id].render();
+				view = new liveblog.EntryView({model: entry}),
+				$entry = view.render().$el;
 
-				}, this);
-				liveblog.queue.deleted().each(function(entry) {
-					this.views[entry.id].delete();
-				}, this);
-			}
-
-			this.updateTimes();
-			liveblog.queue.resetTimer();
-			liveblog.queue.undelayTimer();
-			$( document.body ).trigger( 'post-load' ); // waht does this do?
-		},
-
-		addEntries: function() {
-			var animationDuration = liveblog.queue.length * 1000
-																* liveblog_settings.fade_out_duration;
-
-			liveblog.queue.each(function(entry) {
-				var view = new EntryView({el: $entry, model: model});
-				liveblog.$entry_container.prepend(view.render().$el)
-					.animate({backgroundColor: 'white'},
-								 {duration: this.animationDuration});
-			}, this);
+			$entry.prependTo(liveblog.$entry_container)
+				.addClass('highlight')
+				.animate({backgroundColor: 'white'},
+								 {duration: animationDuration});
 		},
 		scrollToTop: function() {
 			$(window).scrollTop(this.$el.offset().top);
