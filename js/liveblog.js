@@ -251,6 +251,17 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 				liveblog.latest_entry_timestamp = response.latest_timestamp;
 			}
 
+			for ( i = 0; i < response.entries.length; i++ )
+			{
+				entryType = response.entries[i].type;
+				isThere = liveblog.entries.get(response.entries[i].id);
+
+				if (('new' === entryType && isThere) ||
+						('delete' === entryType && !isThere))
+				{
+					response.entries.splice(i, 1);
+				}
+			}
 			return response.entries;
 		},
 		updated: function() {
