@@ -42,26 +42,38 @@ window.liveblog = window.liveblog || {};
 
 		deleteClick: function(event) {
 			event.preventDefault();
-			//if ( !confirm( liveblog_settings.delete_confirmation ) ) {
-			//	return;
-			//}
+			if ( !confirm( liveblog_settings.delete_confirmation ) ) {
+				return;
+			}
 			this.model.set('type', 'delete');
-			liveblog.queue.add(this.model);
 			this.model.destroy({wait: true, error: this.deleteError});
 		},
 
-		deleteError: function(model, response, options) {
+		deleteError: function(model, response) {
 			liveblog.fixedError.show(response);
+		},
+		updateTime: function() {
+			var timestamp = this.$el.data('timestamp'),
+					human = this.formatTimestamp(timestamp);
+				$('.liveblog-meta-time a', this.$el).text(human);
+		},
+		formatTimestamp: function(timestamp) {
+			return moment.unix(timestamp).fromNow();
 		}
 	});
 
 	liveblog.EntriesView = Backbone.View.extend({
 		el: '#liveblog-container',
-		views: {},
 
 		initialize: function() {
-			liveblog.queue.on('reset', function(){
-				this.updateEntries();
+			_.bindAll(this, 'flushQueueWhenOnTop');
+			this.attachEntries();
+
+			liveblog.entries.on('add', this.addEntry, this);
+			liveblog.queue.on('sync', function(){
+				liveblog.hide_spinner();
+				// TODO: are 3rd parties dependent on this? Or can we fire it on the Backbone event bus?
+				$( document.body ).trigger( 'post-load' );
 			}, this);
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 
@@ -151,6 +163,40 @@ window.liveblog = window.liveblog || {};
 
 			return Backbone.sync.apply(this, [method, model, options]);
 		}
+	});
+
+	liveblog.EntriesCollection = Backbone.Collection.extend({
+		model: liveblog.Entry,
+
+		initialize: function() {
+			var queue = liveblog.queue;
+			queue.on('sync', function() {
+				queue.inserted().each(function(entry) {
+					if (liveblog.entriesContainer.isAtTheTop() ){
+						this.add(entry);
+						queue.remove(entry);
+					}
+				}, this);
+				queue.updated().each(function(entry) {
+					var existingEntry = this.get(entry.id);
+					if (existingEntry) {
+						existingEntry.set('html', entry.get('html'));
+						existingEntry.trigger('change:html');
+						queue.remove(entry);
+					}
+				}, this);
+
+				queue.deleted().each(function(entry) {
+					var model = this.get(entry.id);
+					if (model) {
+						model.trigger('destroy');
+						this.remove(model);
+					}
+					queue.remove(entry);
+				}, this);
+			}, this);
+
+		},
 	});
 
 	liveblog.Entry = Backbone.Model.extend({
@@ -415,6 +461,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		liveblog.$spinner         = $( '#liveblog-update-spinner' );
 
 		liveblog.queue = new liveblog.EntriesQueue();
+		liveblog.entries = new liveblog.EntriesCollection();
 		liveblog.fixedNag = new liveblog.FixedNagView();
 		liveblog.fixedError = new liveblog.FixedErrorView();
 		liveblog.entriesContainer = new liveblog.EntriesView();

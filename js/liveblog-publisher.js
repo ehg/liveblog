@@ -114,13 +114,12 @@
 		get_id_for_ajax_request: function() {
 			return null;
 		},
-		success: function(model, response, options) {
+		success: function() {
 			this.enable();
 			this.hide_spinner();
 			this.$textarea.val('');
 			liveblog.queue.resetTimer();
-			var publishedEntry = new liveblog.PublishedEntry(model.attributes);
-			liveblog.entriesContainer.updateEntries(publishedEntry);
+			liveblog.entries.add(this.model);
 		},
 		error: function(model, xhr) {
 			liveblog.fixedError.show(xhr);
@@ -175,15 +174,17 @@
 				content: new_entry_content
 			});
 
-			this.model.on('sync', this.success, this);
-			this.model.on('error', this.error, this);
 		},
 
-		success: function(model, response, options) {
-			this.hide_spinner();
-			this.remove();
-			liveblog.queue.add(model);
-			liveblog.entriesContainer.updateEntries();
+		success: function(model) {
+			var entry = liveblog.entries.get(model.id);
+			if (entry) {
+				this.hide_spinner();
+				entry.set('html', model.get('html'));
+				entry.trigger('change:html'); //TODO: why do we have to manually fire this?
+				this.remove();
+			}
+
 		}
 	});
 
