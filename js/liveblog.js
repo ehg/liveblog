@@ -1,4 +1,4 @@
-/* global liveblog, liveblog_settings, _, alert, jQuery, moment, momentLang, Backbone */
+/* global liveblog, liveblog_settings, _, confirm, jQuery, moment, momentLang, Backbone */
 window.liveblog = window.liveblog || {};
 
 ( function( $ ) {
@@ -33,7 +33,7 @@ window.liveblog = window.liveblog || {};
 			this.remove();
 		},
 
-		editClick: function(event) {
+		editClick: function() {
 			var form = new liveblog.EditEntryView({model: this.model, entry: this.$el});
 			form.render();
 			this.$el.find( '.liveblog-entry-edit' ).hide();
@@ -262,7 +262,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			liveblog.EntriesQueue.__super__.fetch.call(this, options);
 		},
 
-		onFetchError: function(collection, response, options) {
+		onFetchError: function() {
 			liveblog.hide_spinner();
 
 			// Have a max number of checks, which causes the auto-update to shut off or slow down the auto-update

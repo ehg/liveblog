@@ -1,4 +1,4 @@
-/* global liveblog, liveblog_settings, liveblog_publisher_settings, _, confirm, jQuery, Backbone */
+/* global liveblog, liveblog_settings, liveblog_publisher_settings, _, jQuery, Backbone */
 ( function( $ ) {
 	if ( typeof( liveblog ) === 'undefined' ) {
 		return;
@@ -122,7 +122,7 @@
 			var publishedEntry = new liveblog.PublishedEntry(model.attributes);
 			liveblog.entriesContainer.updateEntries(publishedEntry);
 		},
-		error: function(model, xhr, options) {
+		error: function(model, xhr) {
 			liveblog.fixedError.show(xhr);
 			this.enable();
 			this.hide_spinner();
@@ -203,12 +203,12 @@
 			this.model.on('error', this.error, this);
 			this.model.save();
 		},
-		success: function(model, response, options) {
+		success: function(model) {
 			this.form.enable();
 			this.$el.html( '<div class="liveblog-entry"><div class="liveblog-entry-text">' + model.get('html') + '</div></div>' );
 			$( document.body ).trigger( 'post-load' );
 		},
-		error: function(model, xhr, options) {
+		error: function(model, xhr) {
 			liveblog.fixedError.show(xhr);
 			this.form.enable();
 			this.form.switch_to_entry();
