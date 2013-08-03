@@ -146,6 +146,8 @@
 		initialize: function(options) {
 			this.$entry = options.entry;
 			this.$entry_text = this.$entry.find('.liveblog-entry-text');
+			this.model.on('sync', this.success, this);
+			this.model.on('error', this.error, this);
 		},
 		get_content_for_form: function() {
 			return this.$entry_text.data('original-content');
