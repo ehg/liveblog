@@ -222,13 +222,12 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 
 			this.setInitialTimestamps();
 			this.resetTimer();
-			this.on('reset', function() {
+			this.on('sync', function() {
 				this.consecutiveFailuresCount = 0;
 				this.undelayTimer();
 				this.resetTimer();
 				liveblog.hide_spinner();
 			}, this);
-
 		},
 
 		url: function() {
@@ -280,7 +279,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 
 		fetch: function(options) {
 			liveblog.show_spinner();
-			options = options || {};
+			options = {update: true,  remove: false, reset: false};
 			options.error = this.onFetchError;
 			liveblog.EntriesQueue.__super__.fetch.call(this, options);
 		},
@@ -343,7 +342,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			'click a': 'flush'
 		},
 		initialize: function() {
-			liveblog.queue.on('reset', this.render, this);
+			liveblog.queue.on('sync', this.render, this);
 		},
 		render: function() {
 			var entries_in_queue = liveblog.queue.length;
@@ -381,7 +380,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 
 	liveblog.TitleBarCountView = Backbone.View.extend({
 		initialize: function() {
-			liveblog.queue.on('all', this.render, this);
+			liveblog.queue.on('sync', this.render, this);
 			this.originalTitle = document.title;
 		},
 		render: function() {
