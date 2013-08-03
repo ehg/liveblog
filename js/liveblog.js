@@ -84,8 +84,8 @@ window.liveblog = window.liveblog || {};
 				liveblog.fixedError.show("Oh no. Something's gone wrong, and we've stopped updating the live blog, please try and refresh!", true);
 			});
 
-			this.attachEntries();
 		},
+
 		attachEntries: function() {
 			var $entries = $('.liveblog-entry');
 			_.each($entries, function(entry) {
@@ -116,17 +116,18 @@ window.liveblog = window.liveblog || {};
 				liveblog.queue.flush();
 			}
 		},
-		updateTimes: function() {
-			var self = this;
-			this.$el.find('.liveblog-entry').each(function() {
-				var $entry = $(this),
-					timestamp = $entry.data('timestamp'),
-					human = self.formatTimestamp(timestamp);
-				$('.liveblog-meta-time a', $entry).text(human);
-			});
+		startHumanDiffTimer: function() {
+			var tick = function(){
+				liveblog.entries.each(function(entry){
+					entry.trigger('updateTime');
+				});
+			};
+
+			tick();
+			setInterval(tick, 60 * 1000);
 		},
-		formatTimestamp: function(timestamp) {
-			return moment.unix(timestamp).fromNow();
+		isAtTheTop: function() {
+			return $(document).scrollTop()  < this.$el.offset().top;
 		}
 	});
 
@@ -447,8 +448,8 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		liveblog.init_moment_js();
 
 		liveblog.cast_settings_numbers();
-		liveblog.start_human_time_diff_timer();
 
+		liveblog.entriesContainer.startHumanDiffTimer();
 		Backbone.trigger( 'after-init' );
 	};
 
@@ -470,27 +471,12 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		liveblog_settings.fade_out_duration       = parseInt( liveblog_settings.fade_out_duration, 10 );
 	};
 
-
-	// Move to EntriesView
-	liveblog.start_human_time_diff_timer = function() {
-		var tick = function(){ liveblog.entriesContainer.updateTimes(); };
-		tick();
-		setInterval(tick, 60 * 1000);
-	};
-
-
-
 	liveblog.show_spinner = function() {
 		liveblog.$spinner.spin( 'small' );
 	};
 
 	liveblog.hide_spinner = function() {
 		liveblog.$spinner.spin( false );
-	};
-
-
-	liveblog.is_at_the_top = function() {
-		return $(document).scrollTop()  < liveblog.$entry_container.offset().top;
 	};
 
 	// Initialize everything!
