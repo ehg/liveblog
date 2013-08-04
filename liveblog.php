@@ -475,7 +475,6 @@ final class WPCOM_Liveblog {
 			return;
 
 		wp_enqueue_style( self::key,  plugins_url( 'css/liveblog.css', __FILE__ ) );
-		wp_register_script( 'jquery-throttle',  plugins_url( 'js/jquery.ba-throttle-debounce.min.js', __FILE__ ) );
 		wp_register_script( 'moment',  plugins_url( 'js/moment.min.js', __FILE__ ), array(), '1.7.2' );
 		wp_localize_script( 'moment', 'momentLang', array(
 			'locale' => get_locale(),
@@ -495,7 +494,7 @@ final class WPCOM_Liveblog {
 			),
 		));
 
-		wp_enqueue_script( self::key, plugins_url( 'js/liveblog.js', __FILE__ ), array( 'jquery', 'jquery-color', 'backbone', 'jquery-throttle', 'moment' ), self::version, true );
+		wp_enqueue_script( self::key, plugins_url( 'js/liveblog.js', __FILE__ ), array( 'jquery', 'jquery-color', 'backbone', 'moment' ), self::version, true );
 
 		if ( self::is_liveblog_editable() )  {
 			wp_enqueue_script( 'liveblog-publisher', plugins_url( 'js/liveblog-publisher.js', __FILE__ ), array( self::key ), self::version, true );
