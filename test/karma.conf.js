@@ -1,6 +1,6 @@
 // Karma configuration
 // Generated on Mon Jul 22 2013 14:31:02 GMT+0100 (BST)
-var WP_BASE_URL = process.env.BASE_URL || 'http://localhost:8080/wordpress';
+var WP_BASE_URL = process.env.BASE_URL || 'http://local.wordpress.dev';
 
 module.exports = function(config) {
 

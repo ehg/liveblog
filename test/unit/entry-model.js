@@ -1,10 +1,10 @@
 var should = chai.should();
 
-describe('Model: NewEntry', function() {
+describe('Model: Entry', function() {
 	var entry = null;
 
 	before(function(){
-		entry = new liveblog.NewEntry();
+		entry = new liveblog.Entry();
 	});
 
 	it('has the correct URL', function() {
@@ -31,27 +31,14 @@ describe('Model: NewEntry', function() {
 								.and(sinon.match(liveblog_settings.nonce_key +
 											'=' + liveblog_settings.nonce))
 								.and(sinon.match('post_id', liveblog_settings.post_id))
-								.and(sinon.match('type', 'new'))
 			});
 
 			ajaxStub.calledOnce.should.equal(true);
 			return correctArgs.should.equal(true);
 		});
 	});
-});
 
-describe('Model: PublishedEntry', function() {
-	var entry = null;
-
-	before(function(){
-		entry = new liveblog.PublishedEntry();
-	});
-
-	it('has the correct URL', function() {
-		entry.url.should.equal('/endpoint/crud');
-	});
-
-	context('when the entry is saved', function() {
+	context('when the entry is updated', function() {
 		var ajaxStub = null;
 
 		before( function() {

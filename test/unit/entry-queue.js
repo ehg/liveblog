@@ -3,18 +3,19 @@ var should = chai.should();
 mocha.setup({ignoreLeaks: true});
 
 describe('Collection: EntriesQueue', function() {
-	var queue = null;
+	var queue;
 
 	before(function(){
+		liveblog.entries = new Backbone.Collection;
 		queue = new liveblog.EntriesQueue();
 	});
 
 	context('when the collection is populated', function() {
 		before(function(){
 			queue.add([
-				new liveblog.PublishedEntry({id: 1, type: 'delete'}),
-				new liveblog.PublishedEntry({id: 2, type: 'update', html: 'foo'}),
-				new liveblog.PublishedEntry({id: 3, type: 'new', html: 'bar'})
+				new liveblog.Entry({id: 1, type: 'delete'}),
+				new liveblog.Entry({id: 2, type: 'update', html: 'foo'}),
+				new liveblog.Entry({id: 3, type: 'new', html: 'bar'})
 			]);
 		});
 
@@ -42,6 +43,7 @@ describe('Collection: EntriesQueue', function() {
 		before( function() {
 			this.clock = sinon.useFakeTimers(Date.now());
 			fakeServer = sinon.fakeServer.create();
+			fakeServer.autoRespond = true;
 			fakeServer.respondWith(
 				[
 					200,
@@ -82,12 +84,16 @@ describe('Collection: EntriesQueue', function() {
 			queue.url().should.match(new RegExp(liveblog_settings.endpoint_url + '[0-9]{10}/[0-9]{10}'));
 		});
 
-		it('parses the entries', function() {
-			var entry = queue.at(0);
+		it('parses the new entries', function() {
+			var entry = queue.at(queue.length - 1);
 			should.exist(entry);
 			entry.id.should.equal('14');
 			entry.get('type').should.equal('new');
 			entry.get('html').should.equal('generated html');
+		});
+
+		it('does not remove the previous entries', function() {
+			queue.length.should.equal(4);
 		});
 
 		it('updates the latest server response timestamp', function() {
