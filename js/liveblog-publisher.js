@@ -111,9 +111,6 @@
 		hide_spinner: function() {
 			this.$spinner.spin(false);
 		},
-		get_id_for_ajax_request: function() {
-			return null;
-		},
 		success: function() {
 			this.enable();
 			this.hide_spinner();
@@ -151,9 +148,6 @@
 		},
 		get_content_for_form: function() {
 			return this.$entry_text.data('original-content');
-		},
-		get_id_for_ajax_request: function() {
-			return this.$entry.attr('id').replace('liveblog-entry-', '');
 		},
 		render: function() {
 			this.render_template();
