@@ -26,7 +26,8 @@ Pretty straight-forward:
 * CSS is in `css/`.
 * JavaScript is in `js/`.
 * Translations are in `languages/`.
-* Tests are in `t/`.
+* PHP tests are in `t/`.
+* JavaScript tests are in `test/`.
 
 # Backend
 
@@ -35,3 +36,19 @@ Pretty straight-forward:
 * The methods responsible for responding to AJAX requests are prefixed with `ajax_`. There's most of the action.
 * `WPCOM_Liveblog_Entry_Query` is responsible for searching for entries by different criteria. Its methods usually return arrays of instances of `WPCOM_Liveblog_Entry`.
 * `WPCOM_Liveblog_Entry` represents a liveblog entry. It contains all the comment data and some functionality, mostly around rendering it in different contexts.
+
+# Running the JavaScript tests
+
+## Unit tests
+
+Unit tests are run with [karma](http://karma-runner.github.io/) - which runs unit tests in Chrome - this is so we don't have to fake out the DOM and BOM.
+
+To install Karma:
+
+    cd test
+    npm install
+
+To run the tests:
+
+    cd test
+    WP_BASE_URL="http://your.wordpress.install" ./node_modules/.bin/karma start
