@@ -390,7 +390,8 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		flush: function(e) {
 			e.preventDefault();
 			liveblog.queue.modified().each(function(entry) {
-				if (!liveblog.entries.get(entry.id)) {
+				if (!liveblog.entries.get(entry.id) &&
+						!liveblog.queue.deleted().get(entry.id)) {
 					liveblog.entries.add(entry);
 				}
 			});
