@@ -237,7 +237,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		},
 
 		parse: function(response, options) {
-			var i, entryType, isThere,
+			var i, entry, entryType, isThere,
 				xhr = options.xhr || options,
 				timestamp_milliseconds = Date.parse( xhr.getResponseHeader( 'Date' ) );
 		  liveblog.latest_response_server_timestamp = Math.floor( timestamp_milliseconds / 1000 );
@@ -249,8 +249,9 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 
 			for ( i = 0; i < response.entries.length; i++ )
 			{
-				entryType = response.entries[i].type;
-				isThere = liveblog.entries.get(response.entries[i].id);
+				entry = response.entries[i];
+				entryType = entry.type;
+				isThere = liveblog.entries.get(entry);
 
 				if (('new' === entryType && isThere) ||
 						('delete' === entryType && !isThere))
