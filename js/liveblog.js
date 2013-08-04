@@ -70,7 +70,7 @@ window.liveblog = window.liveblog || {};
 			this.attachEntries();
 
 			liveblog.entries.on('add', this.addEntry, this);
-			liveblog.queue.on('sync', function(){
+			liveblog.queue.on('fetched', function(){
 				liveblog.hide_spinner();
 				// TODO: are 3rd parties dependent on this? Or can we fire it on the Backbone event bus?
 				$( document.body ).trigger( 'post-load' );
@@ -144,7 +144,7 @@ window.liveblog = window.liveblog || {};
 
 		initialize: function() {
 			var queue = liveblog.queue;
-			queue.on('sync', function() {
+			queue.on('fetched', function() {
 				queue.inserted().each(function(entry) {
 					if (liveblog.entriesContainer.isAtTheTop() ){
 						this.add(entry);
@@ -215,11 +215,11 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 		consecutiveFailuresCount: 0,
 
 		initialize: function() {
-			_.bindAll(this, 'fetch', 'onFetchError', 'resetTimer');
+			_.bindAll(this, 'fetch', 'onFetchSuccess', 'onFetchError', 'resetTimer');
 
 			this.setInitialTimestamps();
 			this.resetTimer();
-			this.on('sync', function() {
+			this.on('fetched', function() {
 				this.consecutiveFailuresCount = 0;
 				this.undelayTimer();
 				this.resetTimer();
@@ -292,13 +292,24 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			this.reset([]);
 		},
 
-		fetch: function(options) {
+		fetch: function(opts) {
+			var options = opts || {};
 			liveblog.show_spinner();
-			options = {update: true,  remove: false, reset: false};
-			options.error = this.onFetchError;
+			options = _.defaults(options, {
+				merge: true,
+				update: true,
+				remove: false,
+				add: true,
+				error: this.onFetchError,
+				success: this.onFetchSuccess
+			});
 			liveblog.EntriesQueue.__super__.fetch.call(this, options);
 		},
 
+		onFetchSuccess: function() {
+			// Trigger our own event, since Backbone 0.9.2 and Backbone 1.0.0 sync and reset behaviour is so different
+			this.trigger('fetched');
+		},
 		onFetchError: function() {
 			liveblog.hide_spinner();
 
@@ -357,7 +368,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 			'click a': 'flush'
 		},
 		initialize: function() {
-			liveblog.queue.on('sync', this.render, this);
+			liveblog.queue.on('fetched', this.render, this);
 		},
 		render: function() {
 			var entries_in_queue = liveblog.queue.modified().length;
@@ -401,7 +412,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 
 	liveblog.TitleBarCountView = Backbone.View.extend({
 		initialize: function() {
-			liveblog.queue.on('sync', this.render, this);
+			liveblog.queue.on('fetched', this.render, this);
 			this.originalTitle = document.title;
 		},
 		render: function() {
@@ -498,6 +509,65 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 	liveblog.hide_spinner = function() {
 		liveblog.$spinner.spin( false );
 	};
+
+	// If we're using Backbone 0.9.2, we need to patch collection add to support
+	// merging of models.
+	if (Backbone.VERSION === '0.9.2') {
+		Backbone.Collection.prototype.add = function(models, options) {
+			var i, index, length, model, cid, id, cids = {}, ids = {}, dups = [];
+			options || (options = {});
+			models = _.isArray(models) ? models.slice() : [models];
+
+			// Begin by turning bare objects into model references, and preventing
+			// invalid models or duplicate models from being added.
+			for (i = 0, length = models.length; i < length; i++) {
+				if (!(model = models[i] = this._prepareModel(models[i], options))) {
+					throw new Error("Can't add an invalid model to a collection");
+				}
+				cid = model.cid;
+				id = model.id;
+				if (cids[cid] || this._byCid[cid] || ((id != null) && (ids[id] || this._byId[id]))) {
+					dups.push(i);
+					continue;
+				}
+				cids[cid] = ids[id] = model;
+			}
+
+			i = dups.length;
+			while (i--) {
+			dups[i] = models.splice(dups[i], 1)[0];
+			}
+
+			// Listen to added models' events, and index models for lookup by
+			// `id` and by `cid`.
+			for (i = 0, length = models.length; i < length; i++) {
+				(model = models[i]).on('all', this._onModelEvent, this);
+				this._byCid[model.cid] = model;
+				if (model.id != null) this._byId[model.id] = model;
+			}
+
+			// Insert models into the collection, re-sorting if needed, and triggering
+			// `add` events unless silenced.
+			this.length += length;
+			index = options.at != null ? options.at : this.models.length;
+			Array.prototype.splice.apply(this.models, [index, 0].concat(models));
+			if (this.comparator) this.sort({silent: true});
+			if (options.silent) return this;
+			for (i = 0, length = this.models.length; i < length; i++) {
+				if (!cids[(model = this.models[i]).cid]) continue;
+				options.index = i;
+				model.trigger('add', model, this, options);
+			}
+
+			if (options.merge) {
+				for (i = 0, length = dups.length; i < length; i++) {
+					model = this._byId[dups[i].id] || this._byCid[dups[i].cid];
+					model.set(dups[i], options);
+				}
+			}
+			return this;
+		}
+	}
 
 	// Initialize everything!
 	if ( 'archive' !== liveblog_settings.state ) {
