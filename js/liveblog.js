@@ -78,8 +78,7 @@ window.liveblog = window.liveblog || {};
 			$(window).scroll(_.throttle(this.flushQueueWhenOnTop, 250));
 
 			liveblog.queue.on('stoppedPolling', function() {
-				// TODO: i18n
-				liveblog.fixedError.show("Oh no. Something's gone wrong, and we've stopped updating the live blog, please try and refresh!", true);
+				liveblog.fixedError.show(liveblog_settings.stopped_polling_error_message, true);
 			});
 
 		},

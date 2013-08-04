@@ -532,6 +532,7 @@ final class WPCOM_Liveblog {
 				'delete_confirmation'    => __( 'Do you really want do delete this entry? There is no way back.', 'liveblog' ),
 				'error_message_template' => __( 'Error {error-code}: {error-message}', 'liveblog' ),
 				'short_error_message_template' => __( 'Error: {error-message}', 'liveblog' ),
+				'stopped_polling_error_message' => __( "Oh no! Something's gone wrong, and we've stopped updating the live blog, please try and refresh.", 'liveblog' ),
 				'new_update'             => __( 'Liveblog: {number} new update' , 'liveblog'),
 				'new_updates'            => __( 'Liveblog: {number} new updates' , 'liveblog'),
 			) )
