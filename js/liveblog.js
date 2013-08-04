@@ -253,8 +253,7 @@ liveblog.EntriesQueue = Backbone.Collection.extend({
 				entryType = entry.type;
 				isThere = liveblog.entries.get(entry);
 
-				if (('new' === entryType && isThere) ||
-						('delete' === entryType && !isThere))
+				if ('new' === entryType && isThere)
 				{
 					response.entries.splice(i, 1);
 				}
