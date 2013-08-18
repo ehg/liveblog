@@ -52,3 +52,20 @@ To run the tests:
 
     cd test
     WP_BASE_URL="http://your.wordpress.install" ./node_modules/.bin/karma start
+
+## Integration tests
+
+The integration tests use Selenium WebDriver to run.
+
+To install selenium & chromedriver:
+* Create a directory that you'll store selenium & chromedriver in.
+* Download selenium-server-standalone from https://code.google.com/p/selenium/downloads/list
+* Download and unzip chromedriver from https://code.google.com/p/chromedriver/downloads/list
+
+The tests have been tested with Selenium 2.35 and ChromeDriver 2.2.
+
+To run the tests:
+* Start the Selenium server by `cd`ing into the directory where you downloaded selenium and chromedriver to and running `java -jar selenium-server-standalone-2.35.0.jar -Dwebdriver.chrome.driver=chromedriver`, replacing the version number appropriately.
+* In another terminal, `cd test` and run `mocha --timeout 10000 integration/` to run all the tests
+
+Note that these tests may be somewhat unreliable due to timing issues and Selenium/ChromeDriver bugs!
