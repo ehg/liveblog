@@ -51,7 +51,7 @@ To install Karma:
 To run the tests:
 
     cd test
-    WP_BASE_URL="http://your.wordpress.install" ./node_modules/.bin/karma start
+    BASE_URL="http://your.wordpress.install" ./node_modules/.bin/karma start
 
 ## Integration tests
 
