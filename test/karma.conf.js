@@ -1,6 +1,5 @@
 // Karma configuration
 // Generated on Mon Jul 22 2013 14:31:02 GMT+0100 (BST)
-var WP_BASE_URL = process.env.BASE_URL || 'http://local.wordpress.dev';
 
 module.exports = function(config) {
 
@@ -18,9 +17,9 @@ module.exports = function(config) {
     files: [
      {pattern: 'node_modules/chai/chai.js', watched: false, included: true},
      {pattern: 'node_modules/sinon/pkg/sinon.js', watched: false, included: true },
-     {pattern: WP_BASE_URL + '/wp-includes/js/jquery/jquery.js', include: true},
-     {pattern: WP_BASE_URL + '/wp-includes/js/underscore.min.js', include: true},
-     {pattern: WP_BASE_URL + '/wp-includes/js/backbone.min.js', include: true},
+     {pattern: '../../../../wp-includes/js/jquery/jquery.js', include: true},
+     {pattern: '../../../../wp-includes/js/underscore.min.js', include: true},
+     {pattern: '../../../../wp-includes/js/backbone.min.js', include: true},
      {pattern: '../js/spin.js', included: true},
      {pattern: '../js/jquery.spin.js', included: true},
      {pattern: '../js/plupload.js', included: true},
