@@ -44,4 +44,4 @@ before_script:
     # prepare for running the tests
     - cd $plugin_dir
 
-script: travis.sh
+script: ./travis.sh
