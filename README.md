@@ -1,4 +1,4 @@
-
+[![Build Status](https://travis-ci.org/ehg/liveblog.png?branch=backbonify-all)](https://travis-ci.org/ehg/liveblog)
 # Liveblog
 
 * Contributors: [automattic](http://profiles.wordpress.org/automattic), [nbachiyski](http://profiles.wordpress.org/nbachiyski), [batmoo](http://profiles.wordpress.org/batmoo), [johnjamesjacoby](http://profiles.wordpress.org/johnjamesjacoby)
