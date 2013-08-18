@@ -2,4 +2,5 @@
 set -e
 export BASE_URL=https://wordpress.com
 phpunit
-test/node_modules/.bin/karma start --single-run --browsers PhantomJS
+cd test
+./node_modules/.bin/karma start --single-run --browsers PhantomJS
